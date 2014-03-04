@@ -997,8 +997,8 @@ Cflags: -I\${includedir} \@PC_EXTRA_INCLUDE_DIRS\@
       list(APPEND ${PROJECT_NAME}_BUILDTOOL_DEPENDS catkin)
 
       catkin_package(
-        INCLUDE_DIRS ${${PROJECT_NAME}_EXPORTED_INCLUDE_DIRS}
-      )
+        SKIP_CMAKE_CONFIG_GENERATION
+        SKIP_PKG_CONFIG_GENERATION)
     endif()
 
   endmacro( orocos_generate_package )
