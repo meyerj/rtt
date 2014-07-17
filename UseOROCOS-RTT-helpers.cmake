@@ -182,12 +182,11 @@ macro( orocos_find_package PACKAGE )
 
       # Add some output variables (note these are accessible outside of this scope since this is a macro)
       # We don't want to cache these
-      set(ORO_${PACKAGE}_FOUND "${${PACKAGE}_COMP_${OROCOS_TARGET}_FOUND}")
+      set(ORO_${PACKAGE}_FOUND ${${PACKAGE}_COMP_${OROCOS_TARGET}_FOUND})
       set(${PACKAGE}_FOUND ${ORO_${PACKAGE}_FOUND})
-      set(${PACKAGE}_INCLUDE_DIRS "${${PACKAGE}_COMP_${OROCOS_TARGET}_INCLUDE_DIRS}")
-      set(${PACKAGE}_LIBRARY_DIRS "${${PACKAGE}_COMP_${OROCOS_TARGET}_LIBRARY_DIRS}")
-      set(${PACKAGE}_LIBRARIES "${${PACKAGE}_LIBRARIES}")
-      # The flags are space separated, so no need to quote here:
+      set(${PACKAGE}_INCLUDE_DIRS ${${PACKAGE}_COMP_${OROCOS_TARGET}_INCLUDE_DIRS})
+      set(${PACKAGE}_LIBRARY_DIRS ${${PACKAGE}_COMP_${OROCOS_TARGET}_LIBRARY_DIRS})
+      set(${PACKAGE}_LIBRARIES ${${PACKAGE}_LIBRARIES})
       set(${PACKAGE}_CFLAGS_OTHER ${${PACKAGE}_COMP_${OROCOS_TARGET}_CFLAGS_OTHER})
       set(${PACKAGE}_LDFLAGS_OTHER ${${PACKAGE}_COMP_${OROCOS_TARGET}_LDFLAGS_OTHER})
 
@@ -252,7 +251,7 @@ macro( orocos_use_package PACKAGE )
       set(ORO_${PACKAGE}_FOUND True)
       set(${PACKAGE}_FOUND True)
       set(${PACKAGE}_INCLUDE_DIRS ${${PACKAGE}_EXPORTED_OROCOS_INCLUDE_DIRS} ${${PACKAGE}-${OROCOS_TARGET}_EXPORTED_OROCOS_INCLUDE_DIRS})
-      set(${PACKAGE}_LIBRARY_DIRS "")
+      set(${PACKAGE}_LIBRARY_DIRS)
       set(${PACKAGE}_LIBRARIES ${${PACKAGE}_EXPORTED_OROCOS_LIBRARIES} ${${PACKAGE}-${OROCOS_TARGET}_EXPORTED_OROCOS_LIBRARIES})
 
       # Use add_dependencies(target ${USE_OROCOS_EXPORTED_TARGETS}) to make sure that a target is built AFTER
@@ -288,12 +287,12 @@ macro( orocos_use_package PACKAGE )
       set(${PACKAGE}_${OROCOS_TARGET}_USED true)
 
       # Store aggregated variables
-      list(APPEND USE_OROCOS_PACKAGES "${PACKAGE}")
-      list(APPEND USE_OROCOS_INCLUDE_DIRS "${${PACKAGE}_INCLUDE_DIRS}")
-      list(APPEND USE_OROCOS_LIBRARIES "${${PACKAGE}_LIBRARIES}")
-      list(APPEND USE_OROCOS_LIBRARY_DIRS "${${PACKAGE}_LIBRARY_DIRS}")
-      list(APPEND USE_OROCOS_CFLAGS_OTHER "${${PACKAGE}_CFLAGS_OTHER}")
-      list(APPEND USE_OROCOS_LDFLAGS_OTHER "${${PACKAGE}_LDFLAGS_OTHER}")
+      list(APPEND USE_OROCOS_PACKAGES ${PACKAGE})
+      list(APPEND USE_OROCOS_INCLUDE_DIRS ${${PACKAGE}_INCLUDE_DIRS})
+      list(APPEND USE_OROCOS_LIBRARIES ${${PACKAGE}_LIBRARIES})
+      list(APPEND USE_OROCOS_LIBRARY_DIRS ${${PACKAGE}_LIBRARY_DIRS})
+      list(APPEND USE_OROCOS_CFLAGS_OTHER ${${PACKAGE}_CFLAGS_OTHER})
+      list(APPEND USE_OROCOS_LDFLAGS_OTHER ${${PACKAGE}_LDFLAGS_OTHER})
 
       # Remove duplicates from aggregated variables
       if(DEFINED USE_OROCOS_INCLUDE_DIRS)
