@@ -89,6 +89,7 @@ namespace RTT {
          */
         bool signalling;
 
+        os::Mutex writemutex;
 	public:
 	    /**
 	     * Create a channel element for remote data exchange.
@@ -351,6 +352,9 @@ namespace RTT {
           	      CORBA::SystemException
           	    ))
             {
+                // Because write's are one-ways, multiple writes may be dispatched at the same time
+                // this mutex serialises them again.
+                os::MutexLock lock(writemutex);
                 transport.updateFromAny(&sample, value_data_source);
                 base::ChannelElement<T>::write(value_data_source->rvalue());
             }
