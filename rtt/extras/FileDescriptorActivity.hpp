@@ -113,6 +113,7 @@ namespace RTT { namespace extras {
         fd_set m_fd_work;
         bool m_has_error;
         bool m_has_timeout;
+        bool m_external_triggers_enabled;
 
         static const char CMD_BREAK_LOOP  = 0;
         static const char CMD_TRIGGER     = 1;
@@ -274,6 +275,11 @@ namespace RTT { namespace extras {
          * descriptor, and returns true if the signalling was successful
          */
         virtual bool trigger();
+
+        /** Enable/disable external triggers (e.g. from calls to OwnThread operations)
+         * @param enabled True enables external triggers, false disables them.
+         */
+        virtual void externalTriggersEnabled(bool enabled);
     };
 }}
 

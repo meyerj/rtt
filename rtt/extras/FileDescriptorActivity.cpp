@@ -83,6 +83,11 @@ FileDescriptorActivity::FileDescriptorActivity(int priority, RunnableInterface* 
     , m_period(0)
     , m_has_error(false)
     , m_has_timeout(false)
+#ifndef ORO_FILE_DESCRIPTOR_ACTIVITY_DISABLE_EXTERNAL_TRIGGERS
+    , m_external_triggers_enabled(true)
+#else
+    , m_external_triggers_enabled(false)
+#endif
 {
     FD_ZERO(&m_fd_set);
     FD_ZERO(&m_fd_work);
@@ -105,6 +110,11 @@ FileDescriptorActivity::FileDescriptorActivity(int scheduler, int priority, Runn
     , m_period(0)
     , m_has_error(false)
     , m_has_timeout(false)
+#ifndef ORO_FILE_DESCRIPTOR_ACTIVITY_DISABLE_EXTERNAL_TRIGGERS
+    , m_external_triggers_enabled(true)
+#else
+    , m_external_triggers_enabled(false)
+#endif
 {
     FD_ZERO(&m_fd_set);
     FD_ZERO(&m_fd_work);
@@ -118,6 +128,11 @@ FileDescriptorActivity::FileDescriptorActivity(int scheduler, int priority, Seco
     , m_period(period >= 0.0 ? period : 0.0)        // intended period
     , m_has_error(false)
     , m_has_timeout(false)
+#ifndef ORO_FILE_DESCRIPTOR_ACTIVITY_DISABLE_EXTERNAL_TRIGGERS
+    , m_external_triggers_enabled(true)
+#else
+    , m_external_triggers_enabled(false)
+#endif
 {
     FD_ZERO(&m_fd_set);
     FD_ZERO(&m_fd_work);
@@ -131,6 +146,11 @@ FileDescriptorActivity::FileDescriptorActivity(int scheduler, int priority, Seco
     , m_period(period >= 0.0 ? period : 0.0)        // intended period
     , m_has_error(false)
     , m_has_timeout(false)
+#ifndef ORO_FILE_DESCRIPTOR_ACTIVITY_DISABLE_EXTERNAL_TRIGGERS
+    , m_external_triggers_enabled(true)
+#else
+    , m_external_triggers_enabled(false)
+#endif
 {
     FD_ZERO(&m_fd_set);
     FD_ZERO(&m_fd_work);
@@ -238,10 +258,15 @@ bool FileDescriptorActivity::start()
 
 bool FileDescriptorActivity::trigger()
 { 
-    if (isActive() ) 
+    if (m_external_triggers_enabled && isActive())
         return write(m_interrupt_pipe[1], &CMD_TRIGGER, 1) == 1; 
     else
         return false;
+}
+
+void FileDescriptorActivity::externalTriggersEnabled(bool enabled)
+{
+    m_external_triggers_enabled = enabled;
 }
 
 struct fd_watch {
