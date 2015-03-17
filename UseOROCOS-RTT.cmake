@@ -578,37 +578,24 @@ if(OROCOS-RTT_FOUND AND NOT USE_OROCOS_RTT)
     # Works in top level source dir:
     set(TYPEGEN_EXE typegen-NOTFOUND) #re-check for typegen each time !
     find_program(TYPEGEN_EXE typegen)
-    if(NOT TYPEGEN_EXE)
+    if (NOT TYPEGEN_EXE)
       message(FATAL_ERROR "'typegen' not found in path. Can't build typekit. Did you 'source env.sh' ?")
-    endif()
+    else (NOT TYPEGEN_EXE)
 
-    foreach(_imp ${_orocos_typegen_headers_DEPENDS})
-      set(_orocos_typegen_headers_IMPORTS  ${_orocos_typegen_headers_IMPORTS} -i${_imp})
-    endforeach()
+      foreach(_imp ${_orocos_typegen_headers_DEPENDS})
+        set(_orocos_typegen_headers_IMPORTS  ${_orocos_typegen_headers_IMPORTS} -i${_imp})
+      endforeach()
 
-    # Working directory is necessary to be able to find the source files.
-    execute_process( COMMAND ${TYPEGEN_EXE} --output ${PROJECT_BINARY_DIR}/typekit ${_orocos_typegen_headers_IMPORTS} ${PROJECT_NAME} ${_orocos_typegen_headers_HEADERS}
-      WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    )
-    # work around generated manifest.xml file:
-    #execute_process( COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_SOURCE_DIR}/typekit/manifest.xml )
-    add_subdirectory(${PROJECT_BINARY_DIR}/typekit ${PROJECT_BINARY_DIR}/typekit)
-
-    get_target_property(_orocos_typegen_headers_OUTPUT_NAME ${PROJECT_NAME}-typekit OUTPUT_NAME)
-    list(APPEND OROCOS_DEFINED_TYPES " -l${_orocos_typegen_headers_OUTPUT_NAME}")
-    list(APPEND ${PROJECT_NAME}_EXPORTED_TARGETS "${PROJECT_NAME}-typekit")
-    list(APPEND ${PROJECT_NAME}_EXPORTED_INCLUDE_DIRS "${PROJECT_BINARY_DIR}/typekit")
-    list(APPEND ${PROJECT_NAME}_EXPORTED_LIBRARY_DIRS "${CMAKE_INSTALL_PREFIX}/${ORO_TYPEKIT_DESTINATION}")
-
-    # Unset temporary variables
-    unset(_orocos_typegen_headers_HEADERS)
-    unset(_orocos_typegen_headers_ARGN)
-    unset(_orocos_typegen_headers_DEPENDS)
-    unset(_orocos_typegen_headers_INSTALL)
-    unset(_orocos_typegen_headers_SKIP_INSTALL)
-    unset(_orocos_typegen_headers_VERSION)
-    unset(_orocos_typegen_headers_OUTPUT_NAME)
-
+      # Working directory is necessary to be able to find the source files.
+      MESSAGE("Running ${TYPEGEN_EXE} --output ${PROJECT_BINARY_DIR}/typekit ${_orocos_typegen_headers_IMPORTS} ${PROJECT_NAME} ${_orocos_typegen_headers_HEADERS} ")
+      execute_process( COMMAND ${TYPEGEN_EXE} --output ${PROJECT_BINARY_DIR}/typekit ${_orocos_typegen_headers_IMPORTS} ${PROJECT_NAME} ${_orocos_typegen_headers_HEADERS}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} 
+        )
+      # work around generated manifest.xml file:
+      #execute_process( COMMAND ${CMAKE_COMMAND} -E remove -f ${CMAKE_SOURCE_DIR}/typekit/manifest.xml )
+      
+      include(${PROJECT_BINARY_DIR}/typekit/build.cmake)
+    endif (NOT TYPEGEN_EXE)
   endmacro( orocos_typegen_headers )
 
   # typekit libraries should add themselves by calling 'orocos_typekit()' 
