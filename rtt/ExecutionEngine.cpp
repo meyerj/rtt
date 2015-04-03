@@ -83,13 +83,6 @@ namespace RTT
     {
         Logger::In in("~ExecutionEngine");
 
-        // make a copy to avoid call-back troubles:
-        std::vector<TaskCore*> copy = children;
-        for (std::vector<TaskCore*>::iterator it = copy.begin(); it != copy.end();++it){
-            (*it)->setExecutionEngine( 0 );
-        }
-        assert( children.empty() );
-
         ExecutableInterface* foo;
         while ( f_queue->dequeue( foo ) )
             foo->unloaded();
@@ -104,16 +97,6 @@ namespace RTT
 
     TaskCore* ExecutionEngine::getParent() {
         return taskc;
-    }
-
-    void ExecutionEngine::addChild(TaskCore* tc) {
-        children.push_back( tc );
-    }
-
-    void ExecutionEngine::removeChild(TaskCore* tc) {
-        vector<TaskCore*>::iterator it = find (children.begin(), children.end(), tc );
-        if ( it != children.end() )
-            children.erase(it);
     }
 
     void ExecutionEngine::processFunctions()
@@ -137,7 +120,7 @@ namespace RTT
 
     bool ExecutionEngine::runFunction( ExecutableInterface* f )
     {
-        if (this->getActivity() && f) {
+        if ( f && this->getActivity() ) {
             // We only reject running functions when we're in the FatalError state.
             if (taskc && taskc->mTaskState == TaskCore::FatalError )
                 return false;
@@ -173,7 +156,7 @@ namespace RTT
             return true;
 
         // When not running, just remove.
-        if ( getActivity() == 0 || !this->getActivity()->isActive() ) {
+        if ( !this->getActivity()->isActive() ) {
             if ( removeSelfFunction( f ) == false )
                 return false;
         } else {
@@ -213,7 +196,6 @@ namespace RTT
     }
 
     bool ExecutionEngine::initialize() {
-        // nop
         return true;
     }
 
@@ -387,10 +369,10 @@ namespace RTT
                 taskc->prepareUpdateHook();
             }
             processFunctions();
-            processChildren();
+            processHooks();
         }
     }
-    void ExecutionEngine::processChildren() {
+    void ExecutionEngine::processHooks() {
         // only call updateHook in the Running state.
         if ( taskc ) {
             // A trigger() in startHook() will be ignored, we trigger in TaskCore after startHook finishes.
@@ -420,46 +402,12 @@ namespace RTT
                 )
             }
         }
-        if ( !this->getActivity() || ! this->getActivity()->isRunning() ) return;
-
-        // call all children as well.
-        for (std::vector<TaskCore*>::iterator it = children.begin(); it != children.end();++it) {
-            if ( (*it)->mTaskState == TaskCore::Running  && (*it)->mTargetState == TaskCore::Running  ){
-                TRY (
-                    (*it)->prepareUpdateHook();
-                    (*it)->updateHook();
-                ) CATCH(std::exception const& e,
-                    log(Error) << "in updateHook(): switching to exception state because of unhandled exception" << endlog();
-                    log(Error) << "  " << e.what() << endlog();
-                    (*it)->exception();
-               ) CATCH_ALL (
-                    log(Error) << "in updateHook(): switching to exception state because of unhandled exception" << endlog();
-                    (*it)->exception(); // calls stopHook,cleanupHook
-                )
-            }
-            if (  (*it)->mTaskState == TaskCore::RunTimeError ){
-                TRY (
-                    (*it)->errorHook();
-                ) CATCH(std::exception const& e,
-                    log(Error) << "in errorHook(): switching to exception state because of unhandled exception" << endlog();
-                    log(Error) << "  " << e.what() << endlog();
-                    (*it)->exception();
-               ) CATCH_ALL (
-                    log(Error) << "in errorHook(): switching to exception state because of unhandled exception" << endlog();
-                    (*it)->exception(); // calls stopHook,cleanupHook
-                )
-            }
-            if ( !this->getActivity() || ! this->getActivity()->isRunning() ) return;
-        }
     }
 
     bool ExecutionEngine::breakLoop() {
         bool ok = true;
         if (taskc)
             ok = taskc->breakUpdateHook();
-        for (std::vector<TaskCore*>::iterator it = children.begin(); it != children.end();++it) {
-            ok = (*it)->breakUpdateHook() && ok;
-            }
         return ok;
     }
 
@@ -467,7 +415,7 @@ namespace RTT
         // stop and start where former will call breakLoop() in case of non-periodic.
         // this is a forced synchronization point, since stop() will only return when
         // step() returned.
-        if ( getActivity() && this->getActivity()->stop() ) {
+        if ( this->getActivity() && this->getActivity()->stop() ) {
             this->getActivity()->start();
             return true;
         }
