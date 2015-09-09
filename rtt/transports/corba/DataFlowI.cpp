@@ -391,7 +391,7 @@ CChannelElement_ptr CDataFlowInterface_i::buildChannelOutput(
     // Convert to RTT policy.
     ConnPolicy policy2 = toRTT(corba_policy);
 
-    ChannelElementBase::shared_ptr end = type_info->buildChannelOutput(*port);
+    ChannelElementBase::shared_ptr end = type_info->buildChannelOutput(*port, policy2);
     CRemoteChannelElement_i* this_element =
         transporter->createChannelElement_i(mdf, mpoa, corba_policy.pull);
     this_element->setCDataFlowInterface(this);
@@ -476,7 +476,7 @@ CChannelElement_ptr CDataFlowInterface_i::buildChannelInput(
     ConnPolicy policy2 = toRTT(corba_policy);
 
     // Now create the output-side channel elements.
-    ChannelElementBase::shared_ptr start = type_info->buildChannelInput(*port);
+    ChannelElementBase::shared_ptr start = type_info->buildChannelInput(*port, policy2);
 
     // The channel element that exposes our channel in CORBA
     CRemoteChannelElement_i* this_element;

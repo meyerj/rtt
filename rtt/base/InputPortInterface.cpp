@@ -150,11 +150,6 @@ bool InputPortInterface::connectedTo(PortInterface* port)
     return cmanager.connectedTo(port);
 }
 
-void InputPortInterface::clear()
-{
-    if (getEndpoint()) getEndpoint()->clear();
-}
-
 void InputPortInterface::disconnect()
 {
     cmanager.disconnect();
