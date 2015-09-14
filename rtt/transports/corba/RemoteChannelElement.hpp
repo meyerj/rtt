@@ -42,40 +42,41 @@
 #include "DataFlowI.h"
 #include "CorbaTypeTransporter.hpp"
 #include "CorbaDispatcher.hpp"
+#include "CorbaConnPolicy.hpp"
 
 namespace RTT {
 
     namespace corba {
 
-	/**
-	 * Implements the CRemoteChannelElement of the CORBA IDL interface.
-	 * It converts the C++ calls into CORBA calls and vice versa.
-	 * A read will cause a call to the remote channel (which is of the
-	 * same type of this RemoteChannelElement) which returns an Any
-	 * with the data. A similar mechanism is in place for a write.
-	 */
-	template<typename T>
-	class RemoteChannelElement 
-	    : public CRemoteChannelElement_i
-	    , public base::ChannelElement<T>
-	{
-	    typename internal::ValueDataSource<T>::shared_ptr value_data_source;
-	    typename internal::LateReferenceDataSource<T>::shared_ptr ref_data_source;
-	    typename internal::LateConstReferenceDataSource<T>::shared_ptr const_ref_data_source;
+        /**
+         * Implements the CRemoteChannelElement of the CORBA IDL interface.
+         * It converts the C++ calls into CORBA calls and vice versa.
+         * A read will cause a call to the remote channel (which is of the
+         * same type of this RemoteChannelElement) which returns an Any
+         * with the data. A similar mechanism is in place for a write.
+         */
+        template<typename T>
+        class RemoteChannelElement
+            : public CRemoteChannelElement_i
+            , public base::ChannelElement<T>
+        {
+            typename internal::ValueDataSource<T>::shared_ptr value_data_source;
+            typename internal::LateReferenceDataSource<T>::shared_ptr ref_data_source;
+            typename internal::LateConstReferenceDataSource<T>::shared_ptr const_ref_data_source;
 
-	    /**
-	     * Becomes false if we couldn't transfer data to remote
-	     */
-	    bool valid;
-	    /**
-	     * In pull mode, we don't send data, just signal it and remote must read it back.
-	     */
-	    bool pull;
+            /**
+             * Becomes false if we couldn't transfer data to remote
+             */
+            bool valid;
+            /**
+             * In pull mode, we don't send data, just signal it and remote must read it back.
+             */
+            bool pull;
 
             /** This is used on to read the channel */
             typename base::ChannelElement<T>::value_t sample;
 
-	    DataFlowInterface* msender;
+            DataFlowInterface* msender;
 
             /** This is used on the writing side, to avoid allocating an Any for
              * each write
@@ -84,23 +85,23 @@ namespace RTT {
 
             PortableServer::ObjectId_var oid;
 
-	public:
-	    /**
-	     * Create a channel element for remote data exchange.
-	     * @param transport The type specific object that will be used to marshal the data.
-	     * @param poa The POA that manages the underlying CRemoteChannelElement_i.
-	     */
-	    RemoteChannelElement(CorbaTypeTransporter const& transport, DataFlowInterface* sender, PortableServer::POA_ptr poa, bool is_pull)
-	    : CRemoteChannelElement_i(transport, poa),
-	      value_data_source(new internal::ValueDataSource<T>),
-	      ref_data_source(new internal::LateReferenceDataSource<T>),
-	      const_ref_data_source(new internal::LateConstReferenceDataSource<T>),
+        public:
+            /**
+             * Create a channel element for remote data exchange.
+             * @param transport The type specific object that will be used to marshal the data.
+             * @param poa The POA that manages the underlying CRemoteChannelElement_i.
+             */
+            RemoteChannelElement(CorbaTypeTransporter const& transport, DataFlowInterface* sender, PortableServer::POA_ptr poa, bool is_pull)
+            : CRemoteChannelElement_i(transport, poa),
+              value_data_source(new internal::ValueDataSource<T>),
+              ref_data_source(new internal::LateReferenceDataSource<T>),
+              const_ref_data_source(new internal::LateConstReferenceDataSource<T>),
               valid(true), pull(is_pull),
-	      msender(sender),
+              msender(sender),
               write_any(new CORBA::Any)
             {
                 // Big note about cleanup: The RTT will dispose this object through
-	            // the ChannelElement<T> refcounting. So we only need to inform the
+                // the ChannelElement<T> refcounting. So we only need to inform the
                 // POA that our object is dead in disconnect().
                 // CORBA refcount-managed servants must start with a refcount of
                 // 1
@@ -127,8 +128,8 @@ namespace RTT {
              * CORBA IDL function.
              */
             void remoteSignal() ACE_THROW_SPEC ((
-          	      CORBA::SystemException
-          	    ))
+                    CORBA::SystemException
+                  ))
             { base::ChannelElement<T>::signal(); }
 
             bool signal()
@@ -187,10 +188,10 @@ namespace RTT {
              * CORBA IDL function.
              */
             void disconnect() ACE_THROW_SPEC ((
-          	      CORBA::SystemException
-          	    )) {
+                    CORBA::SystemException
+                  )) {
                 // disconnect both local and remote side.
-                // !!!THIS RELIES ON BEHAVIOR OF REMOTEDISCONNECT BELOW doing both writer_to_reader and !writer_to_reader !!!
+                // !!!THIS RELIES ON BEHAVIOR OF REMOTEDISCONNECT BELOW doing both forward and !forward !!!
                 try {
                     if ( ! CORBA::is_nil(remote_side.in()) )
                         remote_side->remoteDisconnect(true);
@@ -201,15 +202,15 @@ namespace RTT {
                 catch(CORBA::Exception&) {}
             }
 
-            void remoteDisconnect(bool writer_to_reader) ACE_THROW_SPEC ((
-          	      CORBA::SystemException
-          	    ))
+            void remoteDisconnect(bool forward) ACE_THROW_SPEC ((
+                    CORBA::SystemException
+                  ))
             {
-                base::ChannelElement<T>::disconnect(writer_to_reader);
+                base::ChannelElement<T>::disconnect(0, forward);
 
                 // Because we support out-of-band transports, we must cleanup more thoroughly.
                 // an oob channel may be sitting at our other end. If not, this is a nop.
-                base::ChannelElement<T>::disconnect(!writer_to_reader);
+                base::ChannelElement<T>::disconnect(0, !forward);
 
                 // Will fail at shutdown if all objects are already deactivated
                 try {
@@ -220,28 +221,33 @@ namespace RTT {
                 catch(CORBA::Exception&) {}
             }
 
-            /**
-             * CORBA IDL function.
-             */
-            void disconnect(bool writer_to_reader) ACE_THROW_SPEC ((
-          	      CORBA::SystemException
-          	    ))
+            bool disconnect(const base::ChannelElementBase::shared_ptr& channel, bool forward)
             {
+                bool success = false;
+
                 try {
-                    if ( ! CORBA::is_nil(remote_side.in()) )
-                        remote_side->remoteDisconnect(writer_to_reader);
+                    if ( ! CORBA::is_nil(remote_side.in()) ) {
+                        remote_side->remoteDisconnect(forward);
+                        success = true;
+                    }
                 }
                 catch(CORBA::Exception&) {}
 
-                base::ChannelElement<T>::disconnect(writer_to_reader);
+                if ( ! CORBA::is_nil(remote_side.in()) ) {
+                    success = base::ChannelElement<T>::disconnect(channel, forward);
+                }
 
                 // Will fail at shutdown if all objects are already deactivated
-                try {
-                    if (mdataflow)
-                        mdataflow->deregisterChannel(_this());
-                    mpoa->deactivate_object(oid);
+                if (success) {
+                    try {
+                        if (mdataflow)
+                            mdataflow->deregisterChannel(_this());
+                        mpoa->deactivate_object(oid);
+                    }
+                    catch(CORBA::Exception&) {}
                 }
-                catch(CORBA::Exception&) {}
+
+                return success;
             }
 
             FlowStatus read(typename base::ChannelElement<T>::reference_t sample, bool copy_old_data)
@@ -254,6 +260,11 @@ namespace RTT {
                 CFlowStatus cfs;
                 if ( (fs = base::ChannelElement<T>::read(sample, copy_old_data)) )
                     return fs;
+
+                // can only read through corba if remote_side is known
+                if ( CORBA::is_nil(remote_side.in()) ) {
+                    return NoData;
+                }
 
                 // go through corba
                 CORBA::Any_var remote_value;
@@ -288,8 +299,8 @@ namespace RTT {
              * CORBA IDL function.
              */
             CFlowStatus read(::CORBA::Any_out sample, bool copy_old_data) ACE_THROW_SPEC ((
-          	      CORBA::SystemException
-          	    ))
+                    CORBA::SystemException
+                  ))
             {
 
                 FlowStatus fs;
@@ -312,6 +323,12 @@ namespace RTT {
                 // try to write locally first
                 if (base::ChannelElement<T>::write(sample))
                     return true;
+
+                // can only write through corba if remote_side is known
+                if ( CORBA::is_nil(remote_side.in()) ) {
+                    return false;
+                }
+
                 // go through corba
                 assert( remote_side.in() != 0 && "Got write() without remote side. Need buffer OR remote side but neither was present.");
                 try
@@ -342,8 +359,8 @@ namespace RTT {
              * CORBA IDL function.
              */
             void write(const ::CORBA::Any& sample) ACE_THROW_SPEC ((
-          	      CORBA::SystemException
-          	    ))
+                    CORBA::SystemException
+                  ))
             {
                 transport.updateFromAny(&sample, value_data_source);
                 base::ChannelElement<T>::write(value_data_source->rvalue());
@@ -360,18 +377,89 @@ namespace RTT {
                 return true;
             }
 
+            virtual bool inputReady(base::ChannelElementBase::shared_ptr const& caller)
+            {
+                // try locally first
+                if (base::ChannelElement<T>::inputReady(caller)) {
+                    return true;
+                }
+
+                // if we do not have a reference to the remote side, assume that it's alright.
+                if ( CORBA::is_nil(remote_side.in()) ) return true;
+
+                // go through corba
+                assert( remote_side.in() != 0 && "Got inputReady() without remote side.");
+                try {
+                    return remote_side->inputReady();
+                }
+#ifdef CORBA_IS_OMNIORB
+                catch(CORBA::SystemException& e)
+                {
+                    log(Error) << "caught CORBA exception while checking a remote channel: " << e._name() << " " << e.NP_minorString() << endlog();
+                    return false;
+                }
+#endif
+                catch(CORBA::Exception& e)
+                {
+                    log(Error) << "caught CORBA exception while checking a remote channel: " << e._name() << endlog();
+                    return false;
+                }
+            }
+
             /**
              * CORBA IDL function.
              */
-            virtual bool inputReady() {
+            virtual bool inputReady()
+            {
                 // signal to oob transport if any.
                 typename base::ChannelElement<T>::shared_ptr input =
                     this->getInput();
                 if (input)
-                    return base::ChannelElement<T>::inputReady();
+                    return base::ChannelElement<T>::inputReady(this);
                 return true;
             }
 
+            virtual bool channelReady(base::ChannelElementBase::shared_ptr const& caller, ConnPolicy const& policy, internal::ConnID *conn_id)
+            {
+                // try to forward locally first
+                if (base::ChannelElement<T>::channelReady(caller, policy, conn_id))
+                    return true;
+
+                // we are not using the ConnID on the remote side, so we clean it up here
+                delete conn_id;
+
+                // go through corba
+                assert( remote_side.in() != 0 && "Got channelReady() request without remote side.");
+
+                try
+                {
+                    remote_side->channelReady(toCORBA(policy));
+                    return true;
+                }
+#ifdef CORBA_IS_OMNIORB
+                catch(CORBA::SystemException& e)
+                {
+                    log(Error) << "caught CORBA exception while marshalling: " << e._name() << " " << e.NP_minorString() << endlog();
+                    return false;
+                }
+#endif
+                catch(CORBA::Exception& e)
+                {
+                    log(Error) << "caught CORBA exception while marshalling: " << e._name() << endlog();
+                    return false;
+                }
+            }
+
+            /**
+             * CORBA IDL function.
+             */
+            virtual bool channelReady(const CConnPolicy& cp) ACE_THROW_SPEC ((
+                    CORBA::SystemException
+                ))
+            {
+                ConnPolicy policy = toRTT(cp);
+                return base::ChannelElement<T>::channelReady(this, policy);
+            }
         };
     }
 }
