@@ -358,7 +358,7 @@ CChannelElement_ptr CDataFlowInterface_i::buildChannelOutput(
     if (!end) return CChannelElement_ptr();
 
     CRemoteChannelElement_i* this_element =
-        transporter->createChannelElement_i(mdf, mpoa, corba_policy.pull);
+        transporter->createChannelElement_i(mdf, mpoa, corba_policy.pull, corba_policy.mandatory);
     this_element->setCDataFlowInterface(this);
 
     /*
@@ -439,7 +439,7 @@ CChannelElement_ptr CDataFlowInterface_i::buildChannelInput(
 
     // The channel element that exposes our channel in CORBA
     CRemoteChannelElement_i* this_element;
-    PortableServer::ServantBase_var servant = this_element = transporter->createChannelElement_i(mdf, mpoa, corba_policy.pull);
+    PortableServer::ServantBase_var servant = this_element = transporter->createChannelElement_i(mdf, mpoa, corba_policy.pull, corba_policy.mandatory);
     this_element->setCDataFlowInterface(this);
     assert( dynamic_cast<ChannelElementBase*>(this_element) );
 

@@ -191,7 +191,7 @@ bool ConnFactory::createAndCheckStream(base::InputPortInterface& input_port, Con
     chan = chan->getOutputEndPoint();
     conn_id->name_id = policy.name_id;
 
-    chan->setOutput( outhalf );
+    chan->addOutput( outhalf, policy.mandatory );
     if ( !outhalf->channelReady(chan, policy, conn_id) == true ) {
         // setup failed: manual cleanup.
         chan->disconnect(true);
@@ -216,7 +216,7 @@ bool ConnFactory::createAndCheckSharedConnection(base::OutputPortInterface& outp
             return false;
         }
 
-        output_port.getConnEndpoint()->addOutput(shared_connection);
+        output_port.getConnEndpoint()->addOutput(shared_connection, policy.mandatory);
     }
 
     // ... and the input port
@@ -228,7 +228,7 @@ bool ConnFactory::createAndCheckSharedConnection(base::OutputPortInterface& outp
             return false;
         }
 
-        shared_connection->addOutput(input_port.getConnEndpoint()); // actually adds the output
+        shared_connection->addOutput(input_port.getConnEndpoint(), policy.mandatory); // actually adds the output
     }
 
     return true;
