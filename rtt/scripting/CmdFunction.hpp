@@ -68,7 +68,7 @@ namespace RTT
                     // we ignore the ret value of start(). It could have been auto-started during loading() of the function.
                     if ( _foo->needsStart() ) { // _foo might be auto-started in runFunction()
                         _foo->start();
-		    }
+                    }
                     if ( ! maccept ) {
                         return ss = SendFailure;
                     }
@@ -102,7 +102,7 @@ namespace RTT
             if (_foo->isLoaded()) mrunner->removeFunction( _foo.get() );
             maccept = false;
             isqueued = false;
-	    ss = SendNotReady;
+            ss = SendNotReady;
         }
 
         CmdFunction* clone() const
