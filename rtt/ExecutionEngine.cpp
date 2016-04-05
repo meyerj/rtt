@@ -251,16 +251,16 @@ namespace RTT
 
     bool ExecutionEngine::process( DisposableInterface* c )
     {
+        // We only reject running functions when we're in the FatalError state.
+        if (taskc && taskc->mTaskState == TaskCore::FatalError )
+            return false;
+
         // forward message to master ExecutionEngine if available
         if (mmaster) {
             return mmaster->process(c);
         }
 
         if ( c && this->getActivity() ) {
-            // We only reject running functions when we're in the FatalError state.
-            if (taskc && taskc->mTaskState == TaskCore::FatalError )
-                return false;
-
             bool result = mqueue->enqueue( c );
             this->getActivity()->trigger();
             msg_cond.broadcast(); // required for waitAndProcessMessages() (EE thread)
@@ -271,11 +271,16 @@ namespace RTT
 
     bool ExecutionEngine::process( PortInterface* port )
     {
-        if ( port && this->getActivity() ) {
-            // We only reject running port callbacks when we're in the FatalError state.
-            if (taskc && taskc->mTaskState == TaskCore::FatalError )
-                return false;
+        // We only reject running port callbacks when we're in the FatalError state.
+        if (taskc && taskc->mTaskState == TaskCore::FatalError )
+            return false;
 
+        // forward port callback to the master ExecutionEngine if available
+        if (mmaster) {
+            return mmaster->process(port);
+        }
+
+        if ( port && this->getActivity() ) {
             bool result = port_queue->enqueue( port );
             this->getActivity()->trigger();
             return result;
@@ -302,8 +307,14 @@ namespace RTT
     {
         if (this->getActivity()->thread()->isSelf())
             waitAndProcessFunctions(pred);
-        else
-            waitForMessagesInternal(pred); // same as for messages.
+        else {
+            // forward the call to the master ExecutionEngine which is processing messages for us...
+            if (mmaster) {
+                mmaster->waitForMessages(pred);
+            } else {
+                waitForMessagesInternal(pred); // same as for messages.
+            }
+        }
     }
 
     void ExecutionEngine::setMaster(ExecutionEngine *master)
@@ -325,6 +336,7 @@ namespace RTT
 
     void ExecutionEngine::waitForMessagesInternal(boost::function<bool(void)> const& pred)
     {
+        assert( mmaster == 0 );
         if ( pred() )
             return;
         // only to be called from the thread not executing step().
@@ -337,6 +349,7 @@ namespace RTT
 
     void ExecutionEngine::waitAndProcessMessages(boost::function<bool(void)> const& pred)
     {
+        assert( mmaster == 0 );
         while ( !pred() ){
             // may not be called while holding the msg_lock !!!
             this->processMessages();
