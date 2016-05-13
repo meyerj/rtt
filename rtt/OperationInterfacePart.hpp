@@ -66,10 +66,10 @@ namespace RTT
      * This class serves as a base class for the template based classes
      * that implement the produce and query logic for a given operation.
      */
-    class OperationInterfacePart
+    class RTT_API OperationInterfacePart
     {
     public:
-        RTT_API virtual ~OperationInterfacePart();
+        virtual ~OperationInterfacePart();
 
         /**
          * Returns the name of this operation.
@@ -194,12 +194,13 @@ namespace RTT
          */
         virtual Handle produceSignal( base::ActionInterface* func, const std::vector<base::DataSourceBase::shared_ptr>& args, ExecutionEngine* subscriber) const = 0;
 #endif
+
         /**
          * Returns any local operation associated with this operation.
          * @return null if no such operation exists, the operation's implementation
          * otherwise.
          */
-        RTT_API virtual boost::shared_ptr<base::DisposableInterface> getLocalOperation() const;
+        virtual boost::shared_ptr<base::DisposableInterface> getLocalOperation() const;
     };
 }
 #endif /* ORO_OPERATIONREPOSITORYPART_HPP_ */

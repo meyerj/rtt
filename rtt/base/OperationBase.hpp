@@ -64,7 +64,7 @@ namespace RTT
          * This base class serves as a template-less handle for operation
          * objects and also stores the name and documentation of an operation.
          */
-        class OperationBase
+        class RTT_API OperationBase
         {
         protected:
             std::string mname;

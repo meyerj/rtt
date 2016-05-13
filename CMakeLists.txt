@@ -105,6 +105,14 @@ ENDIF (BUILD_ENABLE_COVERAGE)
 # MESSAGE("Looking for compiler:")
 INCLUDE (${CMAKE_ROOT}/Modules/CMakeDetermineCXXCompiler.cmake)
 
+# Set default visibility to hidden
+#IF(UNIX)
+#  IF(CMAKE_COMPILER_IS_GNUCC)
+#     SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fvisibility=hidden")
+#     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden")
+#  ENDIF(CMAKE_COMPILER_IS_GNUCC)
+#ENDIF(UNIX)
+
 ###################################################
 #                                                 #
 #       Do some global set-up & checking          #
