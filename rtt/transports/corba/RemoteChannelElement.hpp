@@ -257,7 +257,7 @@ namespace RTT {
                     if ( remote_side && (cfs = remote_side->read(remote_value, copy_old_data) ) )
                     {
                         if (cfs == CNewData || (cfs == COldData && copy_old_data)) {
-                            internal::LateReferenceDataSource<T> ref_data_source(&sample);
+                            internal::ReferenceDataSource<T> ref_data_source(sample);
                             ref_data_source.ref();
                             transport.updateFromAny(&remote_value.in(), &ref_data_source);
                         }
@@ -328,7 +328,8 @@ namespace RTT {
                     // This is used on the writing side, to avoid allocating an Any for
                     // each write
                     CORBA::Any write_any;
-                    internal::LateConstReferenceDataSource<T> const_ref_data_source(&sample);
+                    internal::ConstReferenceDataSource<T> const_ref_data_source(sample);
+
                     // There is a trick. We allocate on the stack, but need to
                     // provide shared pointers. Manually increment refence count
                     // (the stack "owns" the object)
