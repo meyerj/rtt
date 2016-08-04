@@ -107,22 +107,6 @@ namespace RTT
         virtual bool isStreamable() const {
             return use_ostream;
         }
-
-        virtual bool composeType( base::DataSourceBase::shared_ptr source, base::DataSourceBase::shared_ptr result) const {
-            return false;
-        }
-
-        /**
-         * A primitive type is decomposed into itself.
-         */
-        virtual base::DataSourceBase::shared_ptr decomposeType(base::DataSourceBase::shared_ptr source) const
-        {
-            return source;
-        }
-
-        virtual bool decomposeType( base::DataSourceBase::shared_ptr source, PropertyBag& targetbag ) const {
-            return false;
-        }
     };
 }}
 
