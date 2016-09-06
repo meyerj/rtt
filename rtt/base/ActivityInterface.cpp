@@ -71,3 +71,8 @@ RunnableInterface* ActivityInterface::getRunner() const
 {
     return runner;
 }
+
+ActivityInterface* ActivityInterface::getMaster() const
+{
+    return 0;
+}

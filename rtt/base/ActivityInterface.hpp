@@ -218,6 +218,13 @@ namespace RTT
         virtual os::ThreadInterface* thread() = 0;
 
         /**
+         * Returns a pointer to the master activity, which is the
+         * the activity which typically calls execute() on this slave.
+         * @return a pointer to the master activity, or null
+         */
+        virtual ActivityInterface *getMaster() const;
+
+        /**
          * Returns a pointer to the RunnableInterface instance
          */
         virtual RunnableInterface* getRunner() const;

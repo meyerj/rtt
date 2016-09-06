@@ -45,7 +45,6 @@
 #include "internal/MWSRQueue.hpp"
 #include "TaskContext.hpp"
 #include "internal/CatchConfig.hpp"
-#include "extras/SlaveActivity.hpp"
 
 #include <boost/bind.hpp>
 #include <boost/ref.hpp>
@@ -296,10 +295,9 @@ namespace RTT
 
     void ExecutionEngine::setActivity( base::ActivityInterface* task )
     {
-        extras::SlaveActivity *slave_activity = dynamic_cast<extras::SlaveActivity *>(task);
-        if (slave_activity && slave_activity->getMaster()) {
-            ExecutionEngine *master = dynamic_cast<ExecutionEngine *>(slave_activity->getMaster()->getRunner());
-            setMaster(master);
+        base::ActivityInterface *master = (task ? task->getMaster() : 0);
+        if (master) {
+            setMaster(dynamic_cast<ExecutionEngine *>(master->getRunner()));
         } else {
             setMaster(0);
         }
