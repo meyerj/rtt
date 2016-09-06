@@ -142,10 +142,13 @@ namespace RTT
                 return false;
             if ( !f->isLoaded() ) f->loaded(this);
             assert( f->getEngine() == this );
-            bool result = f_queue->enqueue( f );
+            if ( !f_queue->enqueue( f ) ) {
+                f->unloaded();
+                return false;
+            }
             // signal work is to be done:
             this->getActivity()->trigger();
-            return result;
+            return true;
         }
         return false;
     }
