@@ -140,7 +140,8 @@ namespace RTT
             // We only reject running functions when we're in the FatalError state.
             if (taskc && taskc->mTaskState == TaskCore::FatalError )
                 return false;
-            f->loaded(this);
+            if (!f->isLoaded()) f->loaded(this);
+            assert( f->getEngine() == this );
             bool result = f_queue->enqueue( f );
             // signal work is to be done:
             this->getActivity()->trigger();
@@ -174,7 +175,7 @@ namespace RTT
             return true;
 
         // When not running, just remove.
-        if ( getActivity() == 0 || !this->getActivity()->isActive() ) {
+        if ( getActivity() == 0 || !this->getActivity()->isActive() || !this->getThread() ) {
             if ( removeSelfFunction( f ) == false )
                 return false;
         } else {

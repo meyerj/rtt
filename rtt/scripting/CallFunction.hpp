@@ -45,6 +45,7 @@
 #include "ProgramInterface.hpp"
 #include "../internal/DataSource.hpp"
 #include "../ExecutionEngine.hpp"
+// #include "../Logger.hpp"
 #include <boost/shared_ptr.hpp>
 #include <boost/bind.hpp>
 
@@ -109,20 +110,36 @@ namespace RTT
             // this is asyn behaviour :
             if (isqueued == false ) {
                 isqueued = true;
-                maccept = minit->execute() && mrunner->runFunction( _foo.get() );
-                // we ignore the ret value of start(). It could have been auto-started during loading() of the function.
-                if ( _foo->needsStart() ) // _foo might be auto-started in runFunction()
-                    _foo->start();
-                if ( maccept ) {
+                if (!minit->execute()) return false;
+                _foo->loaded(mrunner);
+                if ( _foo->needsStart() && !_foo->start() ) // _foo might be auto-started during loading() of the function.
+                    return false;
+
+                // inline first call if runner and caller engines are the same
+                if ( mrunner == mcaller ) {
+                    //log(Debug) << "Inlining call of function " << _foo->getName() << "()" << endlog();
+
+                    // If execute() returns false, the program requested to be unloaded immediately:
+                    if ( _foo->execute() == false ) {
+                        _foo->unloaded();
+                        maccept = true; // do not enqueue
+                    }
+                }
+
+                if ( !maccept ) {
+                    maccept = mrunner->runFunction( _foo.get() );
+                    if ( !maccept ) return false;
+
                     // block for the result: foo stopped or in error
                     //mcaller->waitForFunctions(boost::bind(&CallFunction::fooDone,this) );
-                    mrunner->waitForFunctions(boost::bind(&CallFunction::fooDone,this) );
-                    if ( _foo->inError() ) {
-                        throw false;
-                    }
-                    return true;
+                    mrunner->waitForFunctions(boost::bind(&CallFunction::fooDone, this) );
                 }
-                return false;
+
+                if ( _foo->inError() ) {
+                    throw false;
+                }
+
+                return true;
             }
             return true;
         }
