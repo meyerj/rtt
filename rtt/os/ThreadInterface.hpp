@@ -213,7 +213,14 @@ namespace RTT
                 return threadnb;
             }
 
-            bool isSelf() const;
+            /**
+             * Check if the calling thread is the same as this thread and not
+             * the main thread. This method must be implemented conservatively:
+             * Only return true if processing task primitives in the thread of
+             * the caller is safe under all circumstances.
+             */
+            virtual bool isSelf() const = 0;
+
         protected:
             /**
              * Threads are given an unique number,

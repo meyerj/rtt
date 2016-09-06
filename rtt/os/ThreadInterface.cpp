@@ -54,8 +54,3 @@ ThreadInterface::~ThreadInterface()
     // destroyed, the number becomes unused.
     //threads.dec();
 }
-
-bool ThreadInterface::isSelf() const
-{
-    return rtos_task_is_self( this->getTask() ) == 1;
-}

@@ -140,6 +140,12 @@ namespace RTT
          * Returns zero, the number of the main() thread.
          */
         unsigned int threadNumber() const;
+
+        /**
+         * Always returns false.
+         */
+        virtual bool isSelf() const;
+
     protected:
 
     };

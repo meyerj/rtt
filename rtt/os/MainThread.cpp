@@ -136,6 +136,8 @@ namespace RTT
     }
 
     unsigned int MainThread::threadNumber() const { return 0; }
+
+    bool MainThread::isSelf() const { return false; }
 }}
 
 

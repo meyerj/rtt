@@ -240,6 +240,8 @@ namespace RTT
 
             virtual void setWaitPeriodPolicy(int p);
 
+            virtual bool isSelf() const;
+
         protected:
             /**
              * Exit and destroy the thread

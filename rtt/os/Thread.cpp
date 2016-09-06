@@ -648,6 +648,11 @@ namespace RTT {
             rtos_task_set_wait_period_policy(&rtos_task, p);  
         }
 
+        bool Thread::isSelf() const
+        {
+            return rtos_task_is_self( this->getTask() ) == 1;
+        }
+
     }
 }
 
