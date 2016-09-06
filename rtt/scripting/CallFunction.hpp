@@ -65,7 +65,7 @@ namespace RTT
     {
         base::ActionInterface* minit;
         ExecutionEngine* mrunner;
-        ExecutionEngine* mcaller;
+
         /**
          * _v is only necessary for the copy/clone semantics.
          */
@@ -92,11 +92,11 @@ namespace RTT
          */
         CallFunction( base::ActionInterface* init_com,
                       boost::shared_ptr<ProgramInterface> foo,
-                      ExecutionEngine* p, ExecutionEngine* caller,
-                      internal::AssignableDataSource<ProgramInterface*>* v = 0 ,
+                      ExecutionEngine* p = 0,
+                      internal::AssignableDataSource<ProgramInterface*>* v = 0,
                       internal::AssignableDataSource<bool>* a = 0 )
         : minit(init_com),
-        mrunner(p), mcaller(caller),
+        mrunner(p),
         _v( v==0 ? new internal::UnboundDataSource< internal::ValueDataSource<ProgramInterface*> >(foo.get()) : v ),
         _foo( foo ), isqueued(false), maccept(false)
         {
@@ -115,18 +115,13 @@ namespace RTT
                 if ( _foo->needsStart() && !_foo->start() ) // _foo might be auto-started during loading() of the function.
                     return false;
 
-                // inline first call if runner and caller engines are the same
-                if ( mrunner == mcaller ) {
+                // inline call if mrunner is null
+                if ( !mrunner ) {
                     //log(Debug) << "Inlining call of function " << _foo->getName() << "()" << endlog();
+                    while ( _foo->execute() == true && !_foo->inError() );
+                    _foo->unloaded();
 
-                    // If execute() returns false, the program requested to be unloaded immediately:
-                    if ( _foo->execute() == false ) {
-                        _foo->unloaded();
-                        maccept = true; // do not enqueue
-                    }
-                }
-
-                if ( !maccept ) {
+                } else {
                     maccept = mrunner->runFunction( _foo.get() );
                     if ( !maccept ) return false;
 
@@ -162,7 +157,7 @@ namespace RTT
         base::ActionInterface* clone() const
         {
             // _v is shared_ptr, so don't clone.
-            return new CallFunction( minit->clone(), _foo, mrunner, mcaller, _v.get() );
+            return new CallFunction( minit->clone(), _foo, mrunner, _v.get() );
         }
 
         base::ActionInterface* copy( std::map<const base::DataSourceBase*, base::DataSourceBase*>& alreadyCloned ) const
@@ -172,7 +167,7 @@ namespace RTT
             boost::shared_ptr<ProgramInterface> fcpy( _foo->copy(alreadyCloned) );
             internal::AssignableDataSource<ProgramInterface*>* vcpy = _v->copy(alreadyCloned);
             vcpy->set( fcpy.get() ); // since we own _foo, we may manipulate the copy of _v
-            return new CallFunction( minit->copy(alreadyCloned), fcpy , mrunner, mcaller, vcpy );
+            return new CallFunction( minit->copy(alreadyCloned), fcpy , mrunner, vcpy );
         }
 
     };

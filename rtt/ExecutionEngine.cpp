@@ -140,7 +140,7 @@ namespace RTT
             // We only reject running functions when we're in the FatalError state.
             if (taskc && taskc->mTaskState == TaskCore::FatalError )
                 return false;
-            if (!f->isLoaded()) f->loaded(this);
+            if ( !f->isLoaded() ) f->loaded(this);
             assert( f->getEngine() == this );
             bool result = f_queue->enqueue( f );
             // signal work is to be done:

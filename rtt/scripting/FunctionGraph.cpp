@@ -158,8 +158,6 @@ namespace RTT {
 
     bool FunctionGraph::start()
     {
-        if ( !isLoaded() )
-            return false;
         if ( pStatus == Status::stopped ) {
             this->reset();
         }

@@ -119,7 +119,7 @@ namespace RTT {
 
         DataSourceBase::shared_ptr FunctionFactory::produce(
                       const std::vector<DataSourceBase::shared_ptr>& args
-                      , ExecutionEngine* caller
+                      , ExecutionEngine* /* caller */
                       ) const {
 
             // check if correct number of args :
@@ -169,12 +169,10 @@ namespace RTT {
             // the command gets ownership of the new function :
             // this command is a DataSourceBase...
             AttributeBase* ar= fcopy->getResult();
-            if (!caller)
-                caller = GlobalEngine::Instance();
             if (ar)
-                return ar->getDataSource()->getTypeInfo()->buildActionAlias( new CallFunction( icom, fcopy, proc, caller ), ar->getDataSource()).get();
+                return ar->getDataSource()->getTypeInfo()->buildActionAlias( new CallFunction( icom, fcopy ), ar->getDataSource()).get();
             else // void case, returns result of runFunction (backwards compatibility).
-                return new DataSourceCommand( new CallFunction( icom, fcopy, proc, caller ) );
+                return new DataSourceCommand( new CallFunction( icom, fcopy ) );
         }
 
         base::DataSourceBase::shared_ptr FunctionFactory::produceHandle() const {
