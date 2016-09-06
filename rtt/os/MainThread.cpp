@@ -116,14 +116,14 @@ namespace RTT
         return false;
     }
 
-        void MainThread::setMaxOverrun( int m )
-        {
-        }
+    void MainThread::setMaxOverrun( int m )
+    {
+    }
 
-        int MainThread::getMaxOverrun() const
-        {
-            return 0;
-        }
+    int MainThread::getMaxOverrun() const
+    {
+        return 0;
+    }
 
     void MainThread::setWaitPeriodPolicy(int p)
     {

@@ -274,7 +274,7 @@ namespace RTT
             return;
         }
 
-        if (this->getActivity()->thread()->isSelf())
+        if (this->isSelf())
             waitAndProcessMessages(pred);
         else
             waitForMessagesInternal(pred);
@@ -283,7 +283,7 @@ namespace RTT
 
     void ExecutionEngine::waitForFunctions(const boost::function<bool(void)>& pred)
     {
-        if (this->getActivity()->thread()->isSelf())
+        if (this->isSelf())
             waitAndProcessFunctions(pred);
         else
             waitForMessagesInternal(pred); // same as for messages.
@@ -352,6 +352,12 @@ namespace RTT
                 }
             }
         }
+    }
+
+    bool ExecutionEngine::isSelf() const
+    {
+        os::ThreadInterface* thread = this->getThread();
+        return thread && thread->isSelf();
     }
 
     void ExecutionEngine::step() {

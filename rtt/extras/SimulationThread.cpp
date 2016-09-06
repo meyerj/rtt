@@ -42,7 +42,6 @@
 #include "SimulationActivity.hpp"
 #include "../Logger.hpp"
 #include "../os/threads.hpp"
-#include "../os/MainThread.hpp"
 
 #include "../os/StartStopManager.hpp"
 namespace RTT {
@@ -134,8 +133,9 @@ namespace RTT {
         this->finalize();
         return true;
     }
+
     os::ThreadInterface* SimulationThread::simthread() {
-        return os::MainThread::Instance();
+        return 0;
     }
 
     bool SimulationThread::initialize()

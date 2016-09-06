@@ -154,7 +154,7 @@ namespace RTT { namespace extras {
         virtual bool execute();
         /// Returns true
         virtual bool trigger();
-        /// Returns os::MainThread::Instance()
+        /// Returns null
         virtual os::ThreadInterface* thread();
 
     protected:

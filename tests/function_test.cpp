@@ -26,6 +26,7 @@
 #include <scripting/ScriptingService.hpp>
 #include <Service.hpp>
 #include <OperationCaller.hpp>
+#include <rtt/extras/SequentialActivity.hpp>
 
 class FunctionsFixture : public OperationsFixture
 {
@@ -129,6 +130,13 @@ BOOST_AUTO_TEST_CASE( testOnlyExportFunction)
 
     this->doFunction( prog, tc );
     BOOST_CHECK( tc->getOperation("foo") );
+    BOOST_CHECK( tc->getOperation("foo_ret") );
+    BOOST_CHECK( tc->getOperation("foo_args") );
+
+    // We use a sequential activity in order to force execution on trigger().
+    tc->stop();
+    BOOST_CHECK( tc->setActivity( new SequentialActivity() ) );
+    tc->start();
 
     // Test call:
     {
@@ -229,6 +237,7 @@ BOOST_AUTO_TEST_CASE( testOnlyExportFunction)
 #endif
 }
 #endif
+
 /**
  * Compare to use case above that does the same,
  * but in C++

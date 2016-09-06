@@ -161,19 +161,18 @@ namespace RTT
          */
         virtual bool setPeriod(Seconds s)  = 0;
 
-
         /**
-         * Get the cpu affinity of this activity
+         * Get the cpu affinity of this activity's thread
          *
          * @return The cpu affinity of this activity.
          */
         virtual unsigned getCpuAffinity() const = 0;
 
         /**
-         * Set the cpu affinity of this activity.
+         * Set the cpu affinity of this activity's thread
          * @return true if it could be updated, false otherwise.
          */
-        virtual bool setCpuAffinity(unsigned cpu)  = 0;
+        virtual bool setCpuAffinity(unsigned cpu) = 0;
 
         /**
          * Execute this activity such that it \a executes a step or loop of the RunnableInterface.
@@ -213,7 +212,8 @@ namespace RTT
 
         /**
          * Returns a pointer to the thread which will
-         * run this activity. Will not be null.
+         * run this activity. The returned pointer can
+         * be null if the executing thread is not known.
          */
         virtual os::ThreadInterface* thread() = 0;
 

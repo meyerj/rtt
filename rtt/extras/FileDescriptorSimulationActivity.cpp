@@ -230,5 +230,5 @@ bool FileDescriptorSimulationActivity::trigger()
 
 os::ThreadInterface* FileDescriptorSimulationActivity::thread()
 {
-    return os::MainThread::Instance();
+    return 0;
 }

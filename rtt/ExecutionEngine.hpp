@@ -244,6 +244,13 @@ namespace RTT
         void waitAndProcessFunctions(boost::function<bool(void)> const& pred);
 
         /**
+         * Check if the current thread and the thread that is supposed to execute this ExecutionEngine are
+         * the same. If the executing thread is unknown, this method return false.
+         * @returns true if called from this engine's thread
+         */
+        bool isSelf() const;
+
+        /**
          * The parent or 'owner' of this ExecutionEngine, may be null.
          */
         base::TaskCore*     taskc;

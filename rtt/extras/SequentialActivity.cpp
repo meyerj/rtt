@@ -77,7 +77,7 @@ namespace RTT {
 
     os::ThreadInterface* SequentialActivity::thread()
     {
-        return os::MainThread::Instance();
+        return 0;
     }
 
     bool SequentialActivity::initialize()
