@@ -79,34 +79,32 @@ namespace RTT
         return (find(mtypenames.begin(), mtypenames.end(), name) != mtypenames.end() );
     }
 
-    bool TypeInfo::addTypeIdAlias(TypeId tidalias) {
-        cout << "################ addTypeIdAlias ###############" << endl;
+    bool TypeInfo::addTypeIdAlias(TypeId tid_alias) {
         if ( mtidalias.empty() )
         {
-            mtidalias.push_back(tidalias);
+            mtidalias.push_back(tid_alias);
         }
         else
         {
-            const char* aliasname = tidalias->name();
+            const char* aliasname = tid_alias->name();
             vector<TypeId>::iterator i = mtidalias.begin();
 
             for (; i != mtidalias.end(); ++i){
               if ((*i)->name() == aliasname)
                 return false;
             }
-            mtidalias.push_back(tidalias);
+            mtidalias.push_back(tid_alias);
         }
         return true;
     }
 
-    bool TypeInfo::matchTypeIdAliasName(const std::string& name) {
-        cout << "################ matchTypeIdAliasName ###############" << endl;
+    bool TypeInfo::matchTypeIdAliasName(const std::string& tid_alias_name) {
         if ( !mtidalias.empty() )
         {
             vector<TypeId>::iterator i = mtidalias.begin();
 
             for (; i != mtidalias.end(); ++i){
-              if ((*i)->name() == name)
+              if ((*i)->name() == tid_alias_name)
                 return true;
             }
         }

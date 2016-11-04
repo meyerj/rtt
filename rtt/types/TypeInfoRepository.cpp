@@ -96,8 +96,6 @@ namespace RTT
                             return i->second;
                     }
                  }
-
-                 cout << "0000" << endl;
                  return 0;
              }
         }
