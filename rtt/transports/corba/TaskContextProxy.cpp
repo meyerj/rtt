@@ -309,8 +309,13 @@ namespace RTT
                 else
                     parent->setValue( ti->buildConstant( cdescription.attributes[i].name.in(), ds));
             } else {
-                log(Error) << "Looking up Attribute " << cdescription.attributes[i].type_name.in();
-                Logger::log() <<": type not known. Check your RTT_COMPONENT_PATH ( \""<<getenv("RTT_COMPONENT_PATH")<<" \")."<<endlog();
+                if(!ti){
+                    log(Error) << "Looking up Attribute " << cdescription.attributes[i].type_name.in();
+                    Logger::log() <<": type not known. Check your RTT_COMPONENT_PATH ( \""<<getenv("RTT_COMPONENT_PATH")<<" \")."<<endlog();
+                }
+                else{
+                    log(Error) << "Attribute " << cdescription.attributes[i].type_name.in() << " does not support CORBA" << endlog();
+                }
             }
         }
 
@@ -336,6 +341,12 @@ namespace RTT
 
                 TypeInfo const* type_info = type_repo->type(cdescription.ports[i].type_name.in());
                 if (!type_info)
+                {
+                    log(Warning) << "remote port " << cdescription.ports[i].name
+                        << " has unknown type and therefore cannot be marshalled over CORBA"
+                        << " and it is ignored by TaskContextProxy" << endlog();
+                }
+                else if (!type_info->hasProtocol(ORO_CORBA_PROTOCOL_ID))
                 {
                     log(Warning) << "remote port " << cdescription.ports[i].name
                         << " has a type that cannot be marshalled over CORBA: " << cdescription.ports[i].type_name << ". "

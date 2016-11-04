@@ -134,31 +134,34 @@ namespace RTT
     }
 
     bool ServiceRequester::connectTo( Service::shared_ptr sp) {
-        for (OperationCallers::iterator it = mmethods.begin(); it != mmethods.end(); ++it) {
-            if ( !it->second->ready() ) {
-                if (sp->hasOperation( it->first )) {
-                    it->second->setImplementation( sp->getLocalOperation( it->first ), mrowner ? mrowner->engine() : 0 );
-                    if ( it->second->ready() ) {
-                        log(Debug) << "Successfully set up OperationCaller " << it->first <<endlog();
-                        if (!mrowner)
-                            log(Debug) << "OperationCaller "<< it->first << " has no caller set: using GlobalEngine."<<endlog();
+        if (sp)
+        {
+            for (OperationCallers::iterator it = mmethods.begin(); it != mmethods.end(); ++it) {
+                if ( !it->second->ready() ) {
+                    if (sp->hasOperation( it->first )) {
+                        it->second->setImplementation( sp->getLocalOperation( it->first ), mrowner ? mrowner->engine() : 0 );
+                        if ( it->second->ready() ) {
+                            log(Debug) << "Successfully set up OperationCaller " << it->first <<endlog();
+                            if (!mrowner)
+                                log(Debug) << "OperationCaller "<< it->first << " has no caller set: using GlobalEngine."<<endlog();
+                        }
                     }
-                }
-                if (sp->hasMember( it->first )) {
-                    it->second->setImplementationPart( sp->getOperation( it->first ), mrowner ? mrowner->engine() : 0 );
-                    if ( it->second->ready() ) {
-                        log(Debug) << "Successfully set up OperationCaller " << it->first <<endlog();
-                        if (!mrowner)
-                            log(Debug) << "OperationCaller "<< it->first << " has no caller set: using GlobalEngine."<<endlog();
+                    if (sp->hasMember( it->first )) {
+                        it->second->setImplementationPart( sp->getOperation( it->first ), mrowner ? mrowner->engine() : 0 );
+                        if ( it->second->ready() ) {
+                            log(Debug) << "Successfully set up OperationCaller " << it->first <<endlog();
+                            if (!mrowner)
+                                log(Debug) << "OperationCaller "<< it->first << " has no caller set: using GlobalEngine."<<endlog();
+                        }
                     }
                 }
             }
-        }
-        if (ready()) {
-            if (!mprovider)
-                mprovider = sp;
-            log(Info) << "Found complete interface of requested service '" << mrname <<"'"<< endlog();
-            return true;
+            if (ready()) {
+                if (!mprovider)
+                    mprovider = sp;
+                log(Info) << "Found complete interface of requested service '" << mrname <<"'"<< endlog();
+                return true;
+            }
         }
 
         return false;

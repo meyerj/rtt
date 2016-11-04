@@ -81,8 +81,23 @@ namespace RTT
             // try alternate name replace / with dots:
             string tkname = "/" + boost::replace_all_copy(boost::replace_all_copy(name, string("."), "/"), "<","</");
             i = data.find( tkname );
-            if ( i == data.end())
-                return 0;
+            if ( i != data.end())
+               return i->second;
+
+            if ( i == data.end()){
+                // try alias name
+                i = data.begin();
+
+                for (; i != data.end(); ++i){
+                    std::vector< std::string > names = i->second->getTypeNames();
+                    vector<std::string>::iterator j = names.begin();
+                    for (; j != names.end(); ++j){
+                        if(((*j) == name) || ((*j) == tkname))
+                            return i->second;
+                    }
+                 }
+                 return 0;
+             }
         }
         // found
         return i->second;
@@ -119,7 +134,8 @@ namespace RTT
       MutexLock lock(type_lock);
       map_t::const_iterator i = data.begin();
       for (; i != data.end(); ++i){
-        if (i->second->getTypeId() && i->second->getTypeId()->name() == type_id_name)
+        if ((i->second->getTypeId() && i->second->getTypeId()->name() == type_id_name)
+             || i->second->matchTypeIdAliasName(type_id_name))
           return i->second;
       }
       return 0;
