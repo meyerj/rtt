@@ -84,17 +84,17 @@ InputPortInterface::NewDataOnPortEvent* InputPortInterface::getNewDataOnPortEven
 #endif
 bool InputPortInterface::connectTo(PortInterface* other, ConnPolicy const& policy)
 {
-    if(other)
+    if(!other)
     {
-        OutputPortInterface* output = dynamic_cast<OutputPortInterface*>(other);
-        if (! output) {
-            log(Error) << "InputPort "<< getName() <<" could not connect to "<< other->getName() << ": not an Output port." <<endlog();
-            return false;
-        }
-        return output->createConnection(*this, policy);
+        log(Error) << "InputPort " << getName() << " could not connect to a null port" << endlog();
+        return false;
     }
-    log(Error) << "InputPort "<< getName() <<" could not connect to a null port" <<endlog();
-    return false;
+    OutputPortInterface* output = dynamic_cast<OutputPortInterface*>(other);
+    if (! output) {
+        log(Error) << "InputPort "<< getName() <<" could not connect to "<< other->getName() << ": not an Output port." <<endlog();
+        return false;
+    }
+    return output->createConnection(*this, policy);
 }
 
 bool InputPortInterface::connectTo(PortInterface* other)
