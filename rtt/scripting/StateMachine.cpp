@@ -463,7 +463,7 @@ namespace RTT {
             }
         else
             {
-                TRACE("Transition triggered from '"+ (current ? current->getName() : "null") +"' to '"+(newState ? newState->getName() : "null")+"'.");
+                TRACE("Transition triggered from '"+ (current ? current->getName() : "(null)") +"' to '"+(newState ? newState->getName() : "(null)")+"'.");
                 // reset handle and run, in case it is still set ( during error
                 // or when an event arrived ).
                 //currentRun = 0;
@@ -1038,7 +1038,7 @@ namespace RTT {
 
         // Run is executed before the transitions.
         if ( currentRun ) {
-            TRACE("Executing run program of '"+ current->getName() +"'" );
+            TRACE("Executing run program of '"+ (current ? current->getName() : "(null)") +"'" );
             if ( this->executeProgram(currentRun, stepping) == false )
                 return true;
             // done.
