@@ -84,6 +84,11 @@ InputPortInterface::NewDataOnPortEvent* InputPortInterface::getNewDataOnPortEven
 #endif
 bool InputPortInterface::connectTo(PortInterface* other, ConnPolicy const& policy)
 {
+    if(!other)
+    {
+        log(Error) << "Function 'connectTo()' could not connect InputPort " << getName() << " to a non existent port." << endlog();
+        return false;
+    }
     OutputPortInterface* output = dynamic_cast<OutputPortInterface*>(other);
     if (! output) {
         log(Error) << "InputPort "<< getName() <<" could not connect to "<< other->getName() << ": not an Output port." <<endlog();
