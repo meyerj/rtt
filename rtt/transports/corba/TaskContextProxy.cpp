@@ -309,8 +309,13 @@ namespace RTT
                 else
                     parent->setValue( ti->buildConstant( cdescription.attributes[i].name.in(), ds));
             } else {
-                log(Error) << "Looking up Attribute " << cdescription.attributes[i].type_name.in();
-                Logger::log() <<": type not known. Check your RTT_COMPONENT_PATH ( \""<<getenv("RTT_COMPONENT_PATH")<<" \")."<<endlog();
+                if(!ti){
+                    log(Error) << "Looking up Attribute " << cdescription.attributes[i].type_name.in();
+                    Logger::log() <<": type not known. Check your RTT_COMPONENT_PATH ( \""<<getenv("RTT_COMPONENT_PATH")<<" \")."<<endlog();
+                }
+                else{
+                    log(Error) << "Attribute " << cdescription.attributes[i].type_name.in() << " does not support CORBA" << endlog();
+                }
             }
         }
 
