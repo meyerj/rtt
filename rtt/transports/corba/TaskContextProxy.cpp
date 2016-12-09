@@ -343,6 +343,12 @@ namespace RTT
                 if (!type_info)
                 {
                     log(Warning) << "remote port " << cdescription.ports[i].name
+                        << " has unknown type and therefore cannot be marshalled over CORBA"
+                        << " and it is ignored by TaskContextProxy" << endlog();
+                }
+                else if (!type_info->hasProtocol(ORO_CORBA_PROTOCOL_ID))
+                {
+                    log(Warning) << "remote port " << cdescription.ports[i].name
                         << " has a type that cannot be marshalled over CORBA: " << cdescription.ports[i].type_name << ". "
                         << "It is ignored by TaskContextProxy" << endlog();
                 }
