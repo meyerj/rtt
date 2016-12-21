@@ -42,7 +42,18 @@
 #include "../fosi.h"
 
 #define TLSF_MLOCK_T            rt_mutex_t
-#define TLSF_CREATE_LOCK(l)     rtos_mutex_init (l)
+
+#if OROCOS_TARGET_GNULINUX
+#define TLSF_CREATE_LOCK(l) { \
+    pthread_mutexattr_t ma_t; \
+    pthread_mutexattr_init(&ma_t); \
+    pthread_mutexattr_setprotocol(&ma_t, PTHREAD_PRIO_INHERIT); \
+    pthread_mutex_init(l, &ma_t); \
+}
+#else
+    #define TLSF_CREATE_LOCK(l)     rtos_mutex_init(l)
+#endif
+
 #define TLSF_DESTROY_LOCK(l)    rtos_mutex_destroy(l)
 #define TLSF_ACQUIRE_LOCK(l)    rtos_mutex_lock(l)
 #define TLSF_RELEASE_LOCK(l)    rtos_mutex_unlock(l)
