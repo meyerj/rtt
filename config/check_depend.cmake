@@ -94,6 +94,23 @@ IF (NOT OROBLD_FORCE_TINY_DEMARSHALLER)
   find_package(Xerces)
 ENDIF (NOT OROBLD_FORCE_TINY_DEMARSHALLER)
 
+# Look for Boost Uuid or libuuid
+find_path(Boost_UUID_INCLUDE_DIR boost/uuid/uuid.hpp PATHS ${Boost_INCLUDE_DIRS})
+if(Boost_UUID_INCLUDE_DIR)
+  message(STATUS "Found Boost Uuid in ${Boost_UUID_INCLUDE_DIR}.")
+  set(ORO_HAVE_BOOST_UUID TRUE)
+else()
+  find_library(uuid_LIBRARY uuid)
+  if(uuid_LIBRARY)
+    message(STATUS "Found libuuid at ${uuid_LIBRARY}.")
+    set(ORO_HAVE_LIBUUID TRUE)
+    list(APPEND OROCOS-RTT_LIBRARIES ${uuid_LIBRARY})
+  else()
+    message(FATAL_ERROR "Either Boost Uuid (Boost >=1.42) or libuuid is required to build RTT!")
+  endif()
+endif()
+
+
 if(XERCES_FOUND)
   set(OROPKG_SUPPORT_XERCES_C TRUE CACHE INTERNAL "" FORCE)
   list(APPEND OROCOS-RTT_INCLUDE_DIRS ${XERCES_INCLUDE_DIRS} )
