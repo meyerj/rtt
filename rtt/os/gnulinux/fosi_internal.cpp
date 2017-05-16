@@ -185,8 +185,8 @@ namespace RTT
             n[MAX_THREAD_NAME_SIZE] = '\0'; // explicitly terminate
             int result = pthread_setname_np(task->thread, &n[0]);
             if (result != 0) {
-                log(Error) << "Failed to set thread name for " << task->name << ": "
-                           << strerror(result) << endlog();
+                log(Warning) << "Failed to set thread name for " << task->name << ": "
+                             << strerror(result) << endlog();
             }
         }
 #endif // ORO_HAVE_PTHREAD_SETNAME_NP
