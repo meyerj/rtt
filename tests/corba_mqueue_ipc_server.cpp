@@ -44,7 +44,7 @@ public:
         ports()->addEventPort( mi1 );
         ports()->addPort( mo1 );
         this->start();
-        ts = corba::TaskContextServer::Create( this, false ); //use-naming
+        ts = corba::TaskContextServer::Create( this, /* use_naming = */ true );
     }
     ~TheServer() {
         this->stop();
@@ -53,8 +53,10 @@ public:
     void updateHook(){
         log(Info) << "Received data on port" <<endlog();
         double d = 123456.789;
-        mi1.read(d);
-        mo1.write(d);
+        FlowStatus fs = NoData;
+        while( (fs = mi1.read(d, false)) == NewData ) {
+            mo1.write(d);
+        }
     }
 
     corba::TaskContextServer* ts;
