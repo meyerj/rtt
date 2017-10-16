@@ -73,16 +73,15 @@ module RTT
         CFlowStatus read(out any sample, in boolean copy_old_data);
 
         /**
-         * Writes into this Channel Element without any feedback (oneway)
-         * @return NotConnected if the channel became invalid
-         */
-        oneway void writeOneway(in any sample);
-
-        /**
          * Writes into this Channel Element.
          * @return NotConnected if the channel became invalid
          */
         CWriteStatus write(in any sample);
+
+        /**
+         * Writes into this Channel Element (one-way)
+         */
+        oneway void writeOneway(in any sample);
 
         /**
          * Disconnect and dispose this object.
