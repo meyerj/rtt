@@ -871,10 +871,10 @@ BOOST_AUTO_TEST_CASE( testStateYieldbyCmd )
         + " run {\n"
         + "   test.assertEqual( test.i, 0 )\n"
         + "   var SendStatus ss\n"
-        + "   ss = test.increaseCmd.cmd() \n"
+        + "   ss = test.increaseCmd.cmd() \n"   // checks transitions!
         + "   test.assert( ss == SendSuccess )\n"
         + "   test.assertEqual( test.i, 1 )\n"
-        + "   ss = test.increaseCmd.cmd()\n"
+        + "   ss = test.increaseCmd.cmd()\n"   // checks transitions!
         + "   test.assert( ss == SendSuccess )\n"
         + "   test.assertEqual( test.i , 2 )\n"
 
@@ -882,9 +882,11 @@ BOOST_AUTO_TEST_CASE( testStateYieldbyCmd )
         + "   test.assert( tss == SendSuccess )\n"
         + "   tss = methods.vo0.cmd()\n"
         + "   test.assert( tss == SendSuccess )\n"
+
+        + "   test.i = -1"
         + " }\n"
         + " transitions {\n"
-        + "       select FINI\n"
+        + "       if test.i == -1 then select FINI\n"
         + " }\n"
         + " }\n"
         + " final state FINI {\n" // Success state.
@@ -900,7 +902,7 @@ BOOST_AUTO_TEST_CASE( testStateYieldbyCmd )
 
 BOOST_AUTO_TEST_CASE( testStateSendFunction )
 {
-    // test yielding and checking .cmd syntax
+    // test yielding and checking .send syntax
     string func = string("export function foo(int arg) {\n")
         + "  do test.assert( tvar_i == arg ) \n"
         + "  do test.assert( tvar_i != tconst_i ) \n"
@@ -921,21 +923,22 @@ BOOST_AUTO_TEST_CASE( testStateSendFunction )
         + "   test.assertEqual( tvar_i, 0 )\n"
 
         + "   while ( sh.collectIfDone() == SendNotReady) \n"
-        + "      yield\n"
+        + "      yield\n"   // checks transitions!
         + "   test.assert( sh.collectIfDone() == SendSuccess )\n"
         + "   test.assertEqual( tvar_i, 2 )\n"
 
         + "   sh2 = foo.send(tvar_i) \n"
-        + "   test.assert( sh2 == SendNotReady )\n"
+        + "   test.assert( sh2.collectIfDone() == SendNotReady )\n"
         + "   test.assertEqual( tvar_i, 2 )\n"
         + "   while ( sh2.collectIfDone() == SendNotReady) \n"
-        + "      yield\n"
-        + "   test.assert( sh2 == SendSuccess )\n"
+        + "      yield\n"   // checks transitions!
+        + "   test.assert( sh2.collectIfDone() == SendSuccess )\n"
         + "   test.assertEqual( tvar_i , 4 )\n"
 
+        + "   test.i = -1"
         + " }\n"
         + " transitions {\n"
-        + "       select FINI\n"
+        + "       if test.i == -1 then select FINI\n"
         + " }\n"
         + " }\n"
         + " final state FINI {\n" // Success state.
@@ -965,23 +968,24 @@ BOOST_AUTO_TEST_CASE( testStateCmdFunction )
         + "   var SendStatus ss\n"
         + "   tvar_i = 0\n"
 
-        + "   ss = foo.cmd(tvar_i)\n"
+        + "   ss = foo.cmd(tvar_i)\n"   // checks transitions!
         + "   test.assert( ss == SendSuccess )\n"
         + "   test.assertEqual( tvar_i, 2 )\n"
 
-        + "   ss = foo.cmd(tvar_i)\n"
+        + "   ss = foo.cmd(tvar_i)\n"   // checks transitions!
         + "   test.assert( ss == SendSuccess )\n"
         + "   test.assertEqual( tvar_i , 4 )\n"
 
-        + "   tss = foo.cmd(tvar_i)\n"
+        + "   tss = foo.cmd(tvar_i)\n"   // checks transitions!
         + "   test.assert( tss == SendSuccess )\n"
-        + "   tss = foo.cmd(tvar_i)\n"
+        + "   tss = foo.cmd(tvar_i)\n"   // checks transitions!
         + "   test.assert( tss == SendSuccess )\n"
         + "   test.assertEqual( tvar_i , 8 )\n"
 
+        + "   test.i = -1"
         + " }\n"
         + " transitions {\n"
-        + "       select FINI\n"
+        + "       if test.i == -1 then select FINI\n"
         + " }\n"
         + " }\n"
         + " final state FINI {\n" // Success state.
