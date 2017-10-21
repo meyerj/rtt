@@ -163,6 +163,54 @@ namespace RTT
 
     };
 
+    /**
+     * A DataSource which retrieves the SendStatus of a CmdFunction
+     * without forwarding the reset() method.
+     */
+    struct RTT_SCRIPTING_API CmdCollectDataSource
+    : public DataSource<SendStatus>
+    {
+        CmdFunction::shared_ptr func;
+    public:
+        typedef boost::intrusive_ptr<CmdCollectDataSource> shared_ptr;
+
+        CmdCollectDataSource(CmdFunction::shared_ptr func) :
+            func(func)
+        {}
+
+        bool evaluate() const
+        {
+            return func->evaluate();
+        }
+
+        DataSource<SendStatus>::result_t get() const
+        {
+            return func->get();
+        }
+
+        DataSource<SendStatus>::result_t value() const
+        {
+            return func->value();
+        }
+
+        DataSource<SendStatus>::const_reference_t rvalue() const
+        {
+            return func->rvalue();
+        }
+
+        virtual void reset() { /* nop, don't reset ! */ }
+
+        virtual CmdCollectDataSource* clone() const
+        {
+            return new CmdCollectDataSource( func );
+        }
+
+        virtual CmdCollectDataSource* copy( std::map<const base::DataSourceBase*, base::DataSourceBase*>& alreadyCloned ) const
+        {
+            return new CmdCollectDataSource ( func->copy(alreadyCloned) );
+        }
+    };
+
         /**
          * A DataSource that collects the result of a CmdFunction
          */
@@ -191,10 +239,7 @@ namespace RTT
               {
                   return new CmdCollectCondition( collectds );
               }
-              virtual CmdCollectCondition* copy(
-                                                          std::map<
-                                                                  const base::DataSourceBase*,
-                                                                  base::DataSourceBase*>& alreadyCloned) const
+              virtual CmdCollectCondition* copy( std::map<const base::DataSourceBase*, base::DataSourceBase*>& alreadyCloned ) const
               {
                   return new CmdCollectCondition ( collectds->copy(alreadyCloned) );
               }

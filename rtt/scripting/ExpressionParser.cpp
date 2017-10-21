@@ -222,6 +222,7 @@ namespace RTT
         // we already checked for the existence of this object and method
         // in seendataname()..
         peerparser.reset();
+        mhandle.reset();
 
         try {
             if ( (meth == "collect" || meth == "collectIfDone") && !ops->hasMember(mmethod) ) {
@@ -245,7 +246,6 @@ namespace RTT
             case DEFAULT_CALLTYPE:
             case CALLTYPE_CALL:
                 ret = ops->produce( meth, args, mcaller );
-                mhandle.reset();
                 break;
             case CALLTYPE_SEND:
                 ret = ops->produceSend( meth, args, mcaller );
@@ -757,6 +757,7 @@ namespace RTT
   void ExpressionParser::dropResult()
   {
       mcmdcnd = 0;
-    parsestack.pop();
+      mhandle.reset();
+      parsestack.pop();
   }
 }
