@@ -61,6 +61,23 @@ namespace RTT
         return fact;
     }
 
+    SendHandleAlias* SendHandleAlias::instantiate( const std::string& name, base::DataSourceBase::shared_ptr sendds ) const
+    {
+        SendHandleAlias * ret = 0;
+//        // This aliasing may happen only once for each var SendHandle. Since 'data' is not assignable, a next assigning will fail.
+//        if ( dynamic_cast<internal::ValueDataSource<SendStatus>*>(data.get()) ) {
+//            // This goes quite far: we also wrap the SH DataSource in a collect such that evaluating it does not cause a reset()+send(), but merely returns the SendStatus:
+//            ret = new SendHandleAlias( name,
+//                                       fact->produceCollect(std::vector<DataSourceBase::shared_ptr>(1,sendds), new ValueDataSource<bool>(false)),
+//                                       fact );
+//        } else {
+            ret = this->clone();
+            ret->setName( name );
+//        }
+
+        return ret;
+    }
+
     SendHandleAlias* SendHandleAlias::clone() const
     {
         return new SendHandleAlias(mname, data.get(), fact);

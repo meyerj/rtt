@@ -189,7 +189,7 @@ namespace RTT {
         }
 
         base::DataSourceBase::shared_ptr FunctionFactory::produceHandle() const {
-            return new ValueDataSource<SendStatus>(SendNotReady);
+            return new CmdCollectDataSource();
         }
         base::DataSourceBase::shared_ptr FunctionFactory::produceSend(const std::vector<base::DataSourceBase::shared_ptr>& args, ExecutionEngine* caller
                                    ) const {

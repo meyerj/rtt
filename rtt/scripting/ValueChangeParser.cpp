@@ -292,8 +292,19 @@ namespace RTT
         if ( expressionparser.hasResult() ) {
             DataSourceBase::shared_ptr expr = expressionparser.getResult();
             ConditionInterface* cond = expressionparser.getCmdResult();
+            boost::shared_ptr<SendHandleAlias> handle = boost::dynamic_pointer_cast<SendHandleAlias>(expressionparser.getHandle());
             expressionparser.dropResult();
             //assert( !expressionparser.hasResult() );
+
+            // replace an empty SendHandle by the real one as returned by the ExpressionParser
+            if (var->getDataSource()->getTypeName() == "SendHandle" && handle) {
+                var = handle->instantiate( valuename, expr );
+                mstore->removeAttribute(valuename);
+                mstore->setValue( var );
+                // nothing to assign if var is an alias
+                if (dynamic_cast<SendHandleAlias *>(var) != 0) return;
+            }
+
             try {
                 ActionInterface* ac = var->getDataSource()->updateAction( expr.get() );
                 assert(ac);

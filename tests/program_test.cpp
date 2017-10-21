@@ -503,8 +503,7 @@ BOOST_AUTO_TEST_CASE(testProgramSendFoo)
         + "do test.assert( tvar_i == -1 ) \n"
         + "do test.assert( tvar_i == tconst_i ) \n"
         + "set tvar_i = +2\n" // 10
-        + "var SendHandle sh\n"
-        + "sh = foo.send(tvar_i)\n"
+        + "var SendHandle sh = foo.send(tvar_i)\n"
         + "while(sh.collectIfDone() != SendSuccess)\n"
         + "   yield\n"
         + "do test.assert( sh.collectIfDone() == SendSuccess )\n"
@@ -565,8 +564,7 @@ BOOST_AUTO_TEST_CASE(testSend)
         + "yield \n" // make sure that increaseCmd is not evaluated twice!
         + "test.assertEqual( test.i, 1 )\n"
 
-        + "var SendHandle sh\n"
-        + "set sh = test.increaseCmd.send()\n"
+        + "var SendHandle sh = test.increaseCmd.send()\n"
         + "test.assertEqual( test.i, 1 )\n" // not yet send
         + "var int r = 0\n"
         //+ "sh.collect(r)\n" // hangs

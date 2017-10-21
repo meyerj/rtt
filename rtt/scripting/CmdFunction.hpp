@@ -47,6 +47,7 @@
 #include "ProgramInterface.hpp"
 #include "../internal/DataSource.hpp"
 #include "../ExecutionEngine.hpp"
+#include "CommandNOP.hpp"
 #include <boost/shared_ptr.hpp>
 #include <boost/bind.hpp>
 
@@ -160,6 +161,11 @@ namespace RTT
             assert ( dynamic_cast<CmdFunction*>( alreadyCloned[this] ) == static_cast<CmdFunction*>( alreadyCloned[this] ) );
             return static_cast<CmdFunction*>( alreadyCloned[this] );
         }
+    };
+
+    struct RTT_SCRIPTING_API CmdAssignSendHandleCommand
+    : public ActionInterface
+    {
 
     };
 
@@ -171,34 +177,55 @@ namespace RTT
     : public DataSource<SendStatus>
     {
         CmdFunction::shared_ptr func;
+        mutable SendStatus ss;
+
     public:
         typedef boost::intrusive_ptr<CmdCollectDataSource> shared_ptr;
 
+        CmdCollectDataSource() :
+            ss(SendFailure)
+        {}
+
         CmdCollectDataSource(CmdFunction::shared_ptr func) :
-            func(func)
+            func(func), ss(SendFailure)
         {}
 
         bool evaluate() const
         {
-            return func->evaluate();
+            if (func.get() == 0) return false;
+            ss = func->get();
+            return true;
         }
 
         DataSource<SendStatus>::result_t get() const
         {
-            return func->get();
+            if (func.get() == 0) return SendFailure;
+            return (ss = func->get());
         }
 
         DataSource<SendStatus>::result_t value() const
         {
-            return func->value();
+            return ss;
         }
 
         DataSource<SendStatus>::const_reference_t rvalue() const
         {
-            return func->rvalue();
+            return ss;
         }
 
-        virtual void reset() { /* nop, don't reset ! */ }
+        virtual void reset() {}
+
+        ActionInterface* updateAction( DataSourceBase* dsb ) {
+            CmdCollectDataSource* other = dynamic_cast<CmdCollectDataSource*>(dsb);
+            if (other) {
+                return new CmdAssignSendHandleCommand(this, other->func);
+            }
+            CmdFunction* other_func = dynamic_cast<CmdFunction*>(dsb);
+            if (other_func) {
+                return new CmdAssignSendHandleCommand(this, other_func);
+            }
+            return 0;
+        }
 
         virtual CmdCollectDataSource* clone() const
         {
@@ -212,7 +239,8 @@ namespace RTT
     };
 
         /**
-         * A DataSource that collects the result of a CmdFunction
+         * A Condition that evaluates to false while the associated
+         * function is running.
          */
         struct RTT_SCRIPTING_API CmdCollectCondition
         : public ConditionInterface

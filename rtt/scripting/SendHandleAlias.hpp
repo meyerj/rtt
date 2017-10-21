@@ -62,6 +62,8 @@ namespace RTT {
             base::DataSourceBase::shared_ptr getDataSource() const;
             OperationInterfacePart* getFactory() const;
 
+            SendHandleAlias* instantiate( const std::string& name, base::DataSourceBase::shared_ptr sendds ) const;
+
             SendHandleAlias* clone() const;
 
             SendHandleAlias* copy( std::map<const base::DataSourceBase*, base::DataSourceBase*>& replacements, bool );
