@@ -40,6 +40,7 @@
 #define ORO_TASK_BIND_STORAGE_HPP
 
 #include <boost/function.hpp>
+#include <boost/call_traits.hpp>
 #include <boost/type_traits/function_traits.hpp>
 #include <boost/bind.hpp>
 #include <boost/fusion/include/vector.hpp>
@@ -64,27 +65,39 @@ namespace RTT
         template<class T>
         struct AStore
         {
+            typedef T arg_type;
+            typedef typename boost::call_traits<arg_type>::value_type value_t;
+            typedef typename boost::call_traits<arg_type>::const_reference const_reference_t;
+            typedef typename boost::call_traits<arg_type>::param_type param_t;
+            typedef typename boost::call_traits<arg_type>::reference reference_t;
+
             T arg;
             AStore() : arg() {}
-            AStore(T t) : arg(t) {}
+            AStore(param_t t) : arg(t) {}
             AStore(AStore const& o) : arg(o.arg) {}
 
-            T& get() { return arg; }
-            void operator()(T a) { arg = a; }
-            operator T() { return arg;}
+            const_reference_t get() { return arg; }
+            void operator()(param_t a) { arg = a; }
+            operator const_reference_t() { return arg; }
         };
 
         template<class T>
         struct AStore<T&>
         {
+            typedef T& arg_type;
+            typedef typename boost::call_traits<arg_type>::value_type value_t;
+            typedef typename boost::call_traits<arg_type>::const_reference const_reference_t;
+            typedef typename boost::call_traits<arg_type>::param_type param_t;
+            typedef typename boost::call_traits<arg_type>::reference reference_t;
+
             T* arg;
             AStore() : arg( &NA<T&>::na() ) {}
-            AStore(T& t) : arg(&t) {}
+            AStore(reference_t t) : arg(&t) {}
             AStore(AStore const& o) : arg(o.arg) {}
 
-            T& get() { return *arg; }
-            void operator()(T& a) { arg = &a; }
-            operator T&() { return *arg;}
+            reference_t get() { return *arg; }
+            void operator()(reference_t a) { arg = &a; }
+            operator reference_t() { return *arg; }
         };
 
         template<class T>
@@ -92,6 +105,8 @@ namespace RTT
 
         template<>
         struct RStore<void> {
+            typedef void arg_type;
+
             bool executed;
             bool error;
             RStore() : executed(false), error(false) {}
@@ -136,11 +151,17 @@ namespace RTT
          */
         template<class T>
         struct RStore : public RStore<void> {
+            typedef T arg_type;
+            typedef typename boost::call_traits<arg_type>::value_type value_t;
+            typedef typename boost::call_traits<arg_type>::const_reference const_reference_t;
+            typedef typename boost::call_traits<arg_type>::param_type param_t;
+            typedef typename boost::call_traits<arg_type>::reference reference_t;
+
             T arg;
             RStore() : arg() {}
 
-            T& result() { checkError(); return arg; }
-            operator T&() { return arg;}
+            reference_t result() { checkError(); return arg; }
+            operator reference_t() { return arg;}
 
             /**
              * Stores the result of a function.
@@ -167,6 +188,12 @@ namespace RTT
         template<class T>
         struct RStore<T&> : public RStore<void>
         {
+            typedef T& arg_type;
+            typedef typename boost::call_traits<arg_type>::value_type value_t;
+            typedef typename boost::call_traits<arg_type>::const_reference const_reference_t;
+            typedef typename boost::call_traits<arg_type>::param_type param_t;
+            typedef typename boost::call_traits<arg_type>::reference reference_t;
+
             T* arg;
             RStore() : arg() {}
 
@@ -187,17 +214,23 @@ namespace RTT
 
             //bool operator()() { return executed; }
 
-            T& result() { checkError(); return *arg; }
-            operator T&() { checkError(); return *arg;}
+            reference_t result() { checkError(); return *arg; }
+            operator reference_t() { checkError(); return *arg;}
         };
 
         template<class T>
         struct RStore<const T> : public RStore<void> {
+            typedef const T arg_type;
+            typedef typename boost::call_traits<arg_type>::value_type value_t;
+            typedef typename boost::call_traits<arg_type>::const_reference const_reference_t;
+            typedef typename boost::call_traits<arg_type>::param_type param_t;
+            typedef typename boost::call_traits<arg_type>::reference reference_t;
+
             T arg;
             RStore() : arg() {}
 
-            T& result() { checkError(); return arg; }
-            operator T&() { checkError(); return arg;}
+            const_reference_t result() { checkError(); return arg; }
+            operator const_reference_t() { checkError(); return arg;}
 
             /**
              * Stores the result of a function.
@@ -313,6 +346,7 @@ namespace RTT
         {
             typedef typename boost::function_traits<ToBind>::result_type result_type;
             typedef typename boost::function_traits<ToBind>::arg1_type   arg1_type;
+            typedef typename AStore<arg1_type>::param_t arg1_param_type;
             typedef RStore<result_type> RStoreType;
 
             // stores the original function pointer, supplied by the user.
@@ -332,7 +366,7 @@ namespace RTT
                                                          , msig(orig.msig)
 #endif
             {}
-            void store(arg1_type t1) { a1(t1); }
+            void store(arg1_param_type t1) { a1(t1); }
             void exec() {
 #ifdef ORO_SIGNALLING_OPERATIONS
                 if (msig) (*msig)(a1.get());
@@ -350,7 +384,9 @@ namespace RTT
         {
             typedef typename boost::function_traits<ToBind>::result_type result_type;
             typedef typename boost::function_traits<ToBind>::arg1_type   arg1_type;
+            typedef typename AStore<arg1_type>::param_t arg1_param_type;
             typedef typename boost::function_traits<ToBind>::arg2_type   arg2_type;
+            typedef typename AStore<arg2_type>::param_t arg2_param_type;
             typedef RStore<result_type> RStoreType;
 
             // stores the original function pointer
@@ -372,7 +408,7 @@ namespace RTT
 #endif
             {}
 
-            void store(arg1_type t1, arg2_type t2) { a1(t1); a2(t2); }
+            void store(arg1_param_type t1, arg2_param_type t2) { a1(t1); a2(t2); }
             void exec() {
 #ifdef ORO_SIGNALLING_OPERATIONS
                 if (msig) (*msig)(a1.get(), a2.get());
@@ -390,8 +426,11 @@ namespace RTT
         {
             typedef typename boost::function_traits<ToBind>::result_type result_type;
             typedef typename boost::function_traits<ToBind>::arg1_type   arg1_type;
+            typedef typename AStore<arg1_type>::param_t arg1_param_type;
             typedef typename boost::function_traits<ToBind>::arg2_type   arg2_type;
+            typedef typename AStore<arg2_type>::param_t arg2_param_type;
             typedef typename boost::function_traits<ToBind>::arg3_type   arg3_type;
+            typedef typename AStore<arg3_type>::param_t arg3_param_type;
             typedef RStore<result_type> RStoreType;
 
             // stores the original function pointer
@@ -414,7 +453,7 @@ namespace RTT
 #endif
             {}
 
-            void store(arg1_type t1, arg2_type t2, arg3_type t3) { a1(t1); a2(t2); a3(t3); }
+            void store(arg1_param_type t1, arg2_param_type t2, arg3_param_type t3) { a1(t1); a2(t2); a3(t3); }
             void exec() {
 #ifdef ORO_SIGNALLING_OPERATIONS
                 if (msig) (*msig)(a1.get(), a2.get(), a3.get());
@@ -431,9 +470,13 @@ namespace RTT
         {
             typedef typename boost::function_traits<ToBind>::result_type result_type;
             typedef typename boost::function_traits<ToBind>::arg1_type   arg1_type;
+            typedef typename AStore<arg1_type>::param_t arg1_param_type;
             typedef typename boost::function_traits<ToBind>::arg2_type   arg2_type;
+            typedef typename AStore<arg2_type>::param_t arg2_param_type;
             typedef typename boost::function_traits<ToBind>::arg3_type   arg3_type;
+            typedef typename AStore<arg3_type>::param_t arg3_param_type;
             typedef typename boost::function_traits<ToBind>::arg4_type   arg4_type;
+            typedef typename AStore<arg4_type>::param_t arg4_param_type;
             typedef RStore<result_type> RStoreType;
 
             // stores the original function pointer
@@ -457,7 +500,7 @@ namespace RTT
 #endif
             {}
 
-            void store(arg1_type t1, arg2_type t2, arg3_type t3, arg4_type t4) { a1(t1); a2(t2); a3(t3); a4(t4); }
+            void store(arg1_param_type t1, arg2_param_type t2, arg3_param_type t3, arg4_param_type t4) { a1(t1); a2(t2); a3(t3); a4(t4); }
             void exec() {
 #ifdef ORO_SIGNALLING_OPERATIONS
                 if (msig) (*msig)(a1.get(), a2.get(), a3.get(), a4.get());
@@ -474,10 +517,15 @@ namespace RTT
         {
             typedef typename boost::function_traits<ToBind>::result_type result_type;
             typedef typename boost::function_traits<ToBind>::arg1_type   arg1_type;
+            typedef typename AStore<arg1_type>::param_t arg1_param_type;
             typedef typename boost::function_traits<ToBind>::arg2_type   arg2_type;
+            typedef typename AStore<arg2_type>::param_t arg2_param_type;
             typedef typename boost::function_traits<ToBind>::arg3_type   arg3_type;
+            typedef typename AStore<arg3_type>::param_t arg3_param_type;
             typedef typename boost::function_traits<ToBind>::arg4_type   arg4_type;
+            typedef typename AStore<arg4_type>::param_t arg4_param_type;
             typedef typename boost::function_traits<ToBind>::arg5_type   arg5_type;
+            typedef typename AStore<arg5_type>::param_t arg5_param_type;
             typedef RStore<result_type> RStoreType;
 
             // stores the original function pointer
@@ -502,7 +550,7 @@ namespace RTT
 #endif
             {}
 
-            void store(arg1_type t1, arg2_type t2, arg3_type t3, arg4_type t4, arg5_type t5) { a1(t1); a2(t2); a3(t3); a4(t4); a5(t5);}
+            void store(arg1_param_type t1, arg2_param_type t2, arg3_param_type t3, arg4_param_type t4, arg5_param_type t5) { a1(t1); a2(t2); a3(t3); a4(t4); a5(t5);}
             void exec() {
 #ifdef ORO_SIGNALLING_OPERATIONS
                 if (msig) (*msig)(a1.get(), a2.get(), a3.get(), a4.get(), a5.get());
@@ -519,11 +567,17 @@ namespace RTT
         {
             typedef typename boost::function_traits<ToBind>::result_type result_type;
             typedef typename boost::function_traits<ToBind>::arg1_type   arg1_type;
+            typedef typename AStore<arg1_type>::param_t arg1_param_type;
             typedef typename boost::function_traits<ToBind>::arg2_type   arg2_type;
+            typedef typename AStore<arg2_type>::param_t arg2_param_type;
             typedef typename boost::function_traits<ToBind>::arg3_type   arg3_type;
+            typedef typename AStore<arg3_type>::param_t arg3_param_type;
             typedef typename boost::function_traits<ToBind>::arg4_type   arg4_type;
+            typedef typename AStore<arg4_type>::param_t arg4_param_type;
             typedef typename boost::function_traits<ToBind>::arg5_type   arg5_type;
+            typedef typename AStore<arg5_type>::param_t arg5_param_type;
             typedef typename boost::function_traits<ToBind>::arg6_type   arg6_type;
+            typedef typename AStore<arg6_type>::param_t arg6_param_type;
             typedef RStore<result_type> RStoreType;
 
             // stores the original function pointer
@@ -549,7 +603,7 @@ namespace RTT
 #endif
             {}
 
-            void store(arg1_type t1, arg2_type t2, arg3_type t3, arg4_type t4, arg5_type t5, arg6_type t6) { a1(t1); a2(t2); a3(t3); a4(t4); a5(t5); a6(t6);}
+            void store(arg1_param_type t1, arg2_param_type t2, arg3_param_type t3, arg4_param_type t4, arg5_param_type t5, arg6_param_type t6) { a1(t1); a2(t2); a3(t3); a4(t4); a5(t5); a6(t6);}
             void exec() {
 #ifdef ORO_SIGNALLING_OPERATIONS
                 if (msig) (*msig)(a1.get(), a2.get(), a3.get(), a4.get(), a5.get(), a6.get());
@@ -566,12 +620,19 @@ namespace RTT
         {
             typedef typename boost::function_traits<ToBind>::result_type result_type;
             typedef typename boost::function_traits<ToBind>::arg1_type   arg1_type;
+            typedef typename AStore<arg1_type>::param_t arg1_param_type;
             typedef typename boost::function_traits<ToBind>::arg2_type   arg2_type;
+            typedef typename AStore<arg2_type>::param_t arg2_param_type;
             typedef typename boost::function_traits<ToBind>::arg3_type   arg3_type;
+            typedef typename AStore<arg3_type>::param_t arg3_param_type;
             typedef typename boost::function_traits<ToBind>::arg4_type   arg4_type;
+            typedef typename AStore<arg4_type>::param_t arg4_param_type;
             typedef typename boost::function_traits<ToBind>::arg5_type   arg5_type;
+            typedef typename AStore<arg5_type>::param_t arg5_param_type;
             typedef typename boost::function_traits<ToBind>::arg6_type   arg6_type;
+            typedef typename AStore<arg6_type>::param_t arg6_param_type;
             typedef typename boost::function_traits<ToBind>::arg7_type   arg7_type;
+            typedef typename AStore<arg7_type>::param_t arg7_param_type;
             typedef RStore<result_type> RStoreType;
 
             // stores the original function pointer
@@ -598,7 +659,7 @@ namespace RTT
 #endif
             {}
 
-            void store(arg1_type t1, arg2_type t2, arg3_type t3, arg4_type t4, arg5_type t5, arg6_type t6, arg7_type t7) { a1(t1); a2(t2); a3(t3); a4(t4); a5(t5); a6(t6); a7(t7);}
+            void store(arg1_param_type t1, arg2_param_type t2, arg3_param_type t3, arg4_param_type t4, arg5_param_type t5, arg6_param_type t6, arg7_param_type t7) { a1(t1); a2(t2); a3(t3); a4(t4); a5(t5); a6(t6); a7(t7);}
             void exec() {
 #ifdef ORO_SIGNALLING_OPERATIONS
                 if (msig) (*msig)(a1.get(), a2.get(), a3.get(), a4.get(), a5.get(), a6.get(), a7.get());
