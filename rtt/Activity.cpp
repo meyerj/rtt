@@ -55,19 +55,19 @@ namespace RTT
 
     Activity::Activity(RunnableInterface* _r, const std::string& name )
         : ActivityInterface(_r), os::Thread(ORO_SCHED_OTHER, RTT::os::LowestPriority, 0.0, 0, name ),
-          update_period(0.0), mtimeout(false)
+          update_period(0.0), mtimeout(false), mstopRequested(false)
     {
     }
 
     Activity::Activity(int priority, RunnableInterface* r, const std::string& name )
         : ActivityInterface(r), os::Thread(ORO_SCHED_RT, priority, 0.0, 0, name ),
-          update_period(0.0), mtimeout(false)
+          update_period(0.0), mtimeout(false), mstopRequested(false)
     {
     }
 
     Activity::Activity(int priority, Seconds period, RunnableInterface* r, const std::string& name )
         : ActivityInterface(r), os::Thread(ORO_SCHED_RT, priority, period, 0, name ),
-          update_period(period), mtimeout(false)
+          update_period(period), mtimeout(false), mstopRequested(false)
     {
         // We pass the requested period to the constructor to not confuse users with log messages.
         // Then we clear it immediately again in order to force the Thread implementation to
@@ -75,9 +75,15 @@ namespace RTT
         Thread::setPeriod(0,0);
     }
 
+     Activity::Activity(int scheduler, int priority, RunnableInterface* r, const std::string& name )
+         : ActivityInterface(r), os::Thread(scheduler, priority, 0.0, 0, name ),
+           update_period(0.0), mtimeout(false), mstopRequested(false)
+     {
+     }
+
      Activity::Activity(int scheduler, int priority, Seconds period, RunnableInterface* r, const std::string& name )
          : ActivityInterface(r), os::Thread(scheduler, priority, period, 0, name ),
-           update_period(period), mtimeout(false)
+           update_period(period), mtimeout(false), mstopRequested(false)
      {
          // We pass the requested period to the constructor to not confuse users with log messages.
          // Then we clear it immediately again in order to force the Thread implementation to
@@ -87,7 +93,7 @@ namespace RTT
 
      Activity::Activity(int scheduler, int priority, Seconds period, unsigned cpu_affinity, RunnableInterface* r, const std::string& name )
      : ActivityInterface(r), os::Thread(scheduler, priority, period, cpu_affinity, name ),
-       update_period(period), mtimeout(false)
+       update_period(period), mtimeout(false), mstopRequested(false)
      {
          // We pass the requested period to the constructor to not confuse users with log messages.
          // Then we clear it immediately again in order to force the Thread implementation to
@@ -177,7 +183,7 @@ namespace RTT
                 wakeup = 0;
             }
 
-            // periodic: we flag mtimeout below; non-periodic: we flag mtimeout in trigger()
+            // periodic: we flag mtimeout below; non-periodic: we flag mtimeout in timeout()
             if (mtimeout) {
                 // was a timeout() call, or internally generated after wakeup
                 mtimeout = false;
@@ -192,6 +198,9 @@ namespace RTT
                     if (runner) {
                         runner->loop();
                         runner->work(base::RunnableInterface::Trigger);
+                    } else {
+                        this->step();
+                        this->work(base::RunnableInterface::Trigger);
                     }
                 }
                 // if a timeout() was done during work(), we will re-enter
@@ -252,7 +261,7 @@ namespace RTT
             msg_cond.broadcast();
         }
 
-        if ( update_period == 0)
+        if (update_period == 0)
         {
             if ( inloop ) {
                 if ( !this->breakLoop() ) {
@@ -295,7 +304,7 @@ namespace RTT
     }
 
     bool Activity::isPeriodic() const {
-        return Thread::isPeriodic();
+        return Thread::isPeriodic() || (update_period != 0.0);
     }
 
     unsigned Activity::getCpuAffinity() const
