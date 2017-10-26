@@ -81,7 +81,7 @@ namespace RTT
         const unsigned int MAX_THREADS;
 
     private:
-        typedef T Item;
+        typedef value_t Item;
         const bool mcircular;
         bool initialized;
 
@@ -108,7 +108,7 @@ namespace RTT
          * @param bufsize the capacity of the buffer.
          * @param initial_value A data sample with which each preallocated data element is initialized.
          */
-        BufferLockFree( unsigned int bufsize, const T& initial_value, const Options &options = Options() )
+        BufferLockFree( unsigned int bufsize, param_t initial_value, const Options &options = Options() )
             : MAX_THREADS(options.max_threads())
             , mcircular(options.circular()), initialized(false)
             , bufs((!options.circular() && !options.multiple_readers()) ?
@@ -127,7 +127,7 @@ namespace RTT
             delete bufs;
         }
 
-        virtual bool data_sample( const T& sample, bool reset = true )
+        virtual bool data_sample( param_t sample, bool reset = true )
         {
             if (!initialized || reset) {
                 mpool->data_sample(sample);
@@ -139,9 +139,9 @@ namespace RTT
 
         }
 
-        virtual T data_sample() const
+        virtual value_t data_sample() const
         {
-            T result = T();
+            value_t result = value_t();
             Item* mitem = mpool->allocate();
             if (mitem != 0) {
                 result = *mitem;
@@ -224,11 +224,11 @@ namespace RTT
             return true;
         }
 
-        size_type Push(const std::vector<T>& items)
+        size_type Push(const std::vector<value_t>& items)
         {
             // @todo Make this function more efficient as in BufferLocked.
             int towrite  = items.size();
-            typename std::vector<T>::const_iterator it;
+            typename std::vector<value_t>::const_iterator it;
             for(  it = items.begin(); it != items.end(); ++it)
                 if ( this->Push( *it ) == false ) {
                     break; // will only happen in non-circular case !
@@ -248,7 +248,7 @@ namespace RTT
             return NewData;
         }
 
-        size_type Pop(std::vector<T>& items )
+        size_type Pop(std::vector<value_t>& items )
         {
             Item* ipop;
             items.clear();
