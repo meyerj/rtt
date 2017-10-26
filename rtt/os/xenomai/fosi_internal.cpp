@@ -49,7 +49,7 @@
 #include <execinfo.h>
 
 extern "C"
-void warn_upon_switch(int sig __attribute__((unused)))
+void warn_upon_switch(int /*sig*/)
 {
     void *bt[32];
     int nentries;
@@ -424,7 +424,7 @@ namespace RTT
 
         INTERNAL_QUAL unsigned rtos_task_get_cpu_affinity(const RTOS_TASK *task)
         {
-            return 0;
+            return ~0;
         }
 
         INTERNAL_QUAL const char* rtos_task_get_name(const RTOS_TASK* mytask) {

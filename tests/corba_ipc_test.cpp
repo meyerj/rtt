@@ -19,6 +19,7 @@
 #include "unit.hpp"
 
 #include <iostream>
+#include <memory>
 
 #include <rtt/OperationCaller.hpp>
 #include <rtt/Service.hpp>
@@ -41,10 +42,10 @@
 using namespace RTT;
 using namespace RTT::detail;
 
-class CorbaTest : public TaskContext
+class CorbaTest
 {
 public:
-    CorbaTest() : TaskContext("CorbaTest") { this->setUp(); }
+    CorbaTest() { this->setUp(); }
     ~CorbaTest() { this->tearDown(); }
 
     TaskContext* tc;
@@ -75,8 +76,8 @@ public:
     void testPortDisconnected();
 
     void callBackPeer(TaskContext* peer, string const& opname) {
-        OperationCaller<void(TaskContext*, string const&)> op1( peer->getOperation(opname), this->engine());
-        OperationCaller<void()> resetCallBackPeer( peer->getOperation("resetCallBackPeer"), this->engine());
+        OperationCaller<void(TaskContext*, string const&)> op1( peer->getOperation(opname), tc->engine() );
+        OperationCaller<void()> resetCallBackPeer( peer->getOperation("resetCallBackPeer"), tc->engine() );
         int count = ++callBackPeer_count;
 
         if (callBackPeer_step == INITIAL) {
@@ -89,13 +90,13 @@ public:
         if (callBackPeer_step == CALL) {
             callBackPeer_step = SEND;
             log(Info) << "Test calls server:" << count <<endlog();
-            op1(this, "callBackPeer");
+            op1(tc, "callBackPeer");
             log(Info) << "Test finishes server call:"<<count <<endlog();
         }
         else if (callBackPeer_step == SEND) {
             callBackPeer_step = FINAL;
             log(Info) << "Test sends server:"<<count <<endlog();
-            handle = op1.send(this, "callBackPeerOwn");
+            handle = op1.send(tc, "callBackPeerOwn");
             log(Info) << "Test finishes server send:"<< count <<endlog();
         }
         log(Info) << "Test finishes callBackPeer():"<< count <<endlog();
@@ -123,8 +124,8 @@ CorbaTest::setUp()
     callBackPeer_count = 0;
     callBackPeer_step = INITIAL;
 
-    addOperation("callBackPeer", &CorbaTest::callBackPeer, this,ClientThread);
-    addOperation("callBackPeerOwn", &CorbaTest::callBackPeer, this,OwnThread);
+    tc->addOperation("callBackPeer", &CorbaTest::callBackPeer, this,ClientThread);
+    tc->addOperation("callBackPeerOwn", &CorbaTest::callBackPeer, this,OwnThread);
 }
 
 
@@ -295,10 +296,10 @@ BOOST_AUTO_TEST_CASE( testRemoteOperationCallerCallback )
     BOOST_REQUIRE( RTT::internal::DataSourceTypeInfo<TaskContext*>::getTypeInfo() !=  RTT::internal::DataSourceTypeInfo<UnknownType>::getTypeInfo());
     BOOST_REQUIRE( RTT::internal::DataSourceTypeInfo<TaskContext*>::getTypeInfo()->getProtocol(ORO_CORBA_PROTOCOL_ID) != 0 );
 
-    BOOST_REQUIRE_EQUAL( callBackPeer_step, INITIAL );
+    BOOST_REQUIRE_EQUAL( (int) callBackPeer_step, (int) INITIAL );
     this->callBackPeer(tp, "callBackPeer");
     sleep(1); //asyncronous processing...
-    BOOST_CHECK_EQUAL( callBackPeer_step, FINAL );
+    BOOST_CHECK_EQUAL( (int) callBackPeer_step, (int) FINAL );
     BOOST_CHECK_EQUAL( callBackPeer_count, 3 );
     BOOST_CHECK( handle.ready() );
     BOOST_CHECK_EQUAL( handle.collectIfDone(), SendSuccess );
@@ -548,7 +549,12 @@ BOOST_AUTO_TEST_CASE( testPortProxying )
     BOOST_CHECK(!write_port->connected());
 
     // Test cloning
-    auto_ptr<base::InputPortInterface> read_clone(dynamic_cast<base::InputPortInterface*>(read_port->clone()));
+#if __cplusplus > 199711L
+    unique_ptr<base::InputPortInterface>
+#else
+    auto_ptr<base::InputPortInterface>
+#endif
+            read_clone(dynamic_cast<base::InputPortInterface*>(read_port->clone()));
     BOOST_CHECK(mo->createConnection(*read_clone));
     BOOST_CHECK(read_clone->connected());
     BOOST_CHECK(!read_port->connected());
@@ -661,16 +667,28 @@ BOOST_AUTO_TEST_CASE( testBufferHalfs )
     mo->write( 3.33 );
     wait_for_equal( cce->read( sample.out(), true), CNewData, 10 );
     sample >>= result;
+#ifndef RTT_CORBA_PORTS_WRITE_ONEWAY
     BOOST_CHECK_EQUAL( result, 6.33);
+#else
+    BOOST_CHECK( (result == 6.33) || (result == 3.33) );
+#endif
     wait_for_equal( cce->read( sample.out(), true ), CNewData, 10 );
     sample >>= result;
+#ifndef RTT_CORBA_PORTS_WRITE_ONEWAY
     BOOST_CHECK_EQUAL( result, 3.33);
+#else
+    BOOST_CHECK( (result == 6.33) || (result == 3.33) );
+#endif
 
     // Check re-read of old data.
     sample <<= 0.0;
     BOOST_CHECK_EQUAL( cce->read( sample.out(), true ), COldData );
     sample >>= result;
+#ifndef RTT_CORBA_PORTS_WRITE_ONEWAY
     BOOST_CHECK_EQUAL( result, 3.33);
+#else
+    BOOST_CHECK( (result == 6.33) || (result == 3.33) );
+#endif
 
     cce->disconnect();
     mo->disconnect();
