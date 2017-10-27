@@ -82,10 +82,9 @@ FileDescriptorActivity::FileDescriptorActivity(int priority, RunnableInterface* 
     , m_period(0)
     , m_has_error(false)
     , m_has_timeout(false)
-    , m_break_loop(false)
-    , m_trigger(false)
-    , m_update_sets(false)
+    , m_has_ioready(false)
 {
+    clearCommandFlags();
     FD_ZERO(&m_fd_set);
     FD_ZERO(&m_fd_work);
     m_interrupt_pipe[0] = m_interrupt_pipe[1] = -1;
@@ -107,10 +106,9 @@ FileDescriptorActivity::FileDescriptorActivity(int scheduler, int priority, Runn
     , m_period(0)
     , m_has_error(false)
     , m_has_timeout(false)
-    , m_break_loop(false)
-    , m_trigger(false)
-    , m_update_sets(false)
+    , m_has_ioready(false)
 {
+    clearCommandFlags();
     FD_ZERO(&m_fd_set);
     FD_ZERO(&m_fd_work);
     m_interrupt_pipe[0] = m_interrupt_pipe[1] = -1;
@@ -123,10 +121,9 @@ FileDescriptorActivity::FileDescriptorActivity(int scheduler, int priority, Seco
     , m_period(period >= 0.0 ? period : 0.0)        // intended period
     , m_has_error(false)
     , m_has_timeout(false)
-    , m_break_loop(false)
-    , m_trigger(false)
-    , m_update_sets(false)
+    , m_has_ioready(false)
 {
+    clearCommandFlags();
     FD_ZERO(&m_fd_set);
     FD_ZERO(&m_fd_work);
     m_interrupt_pipe[0] = m_interrupt_pipe[1] = -1;
@@ -139,10 +136,9 @@ FileDescriptorActivity::FileDescriptorActivity(int scheduler, int priority, Seco
     , m_period(period >= 0.0 ? period : 0.0)        // intended period
     , m_has_error(false)
     , m_has_timeout(false)
-    , m_break_loop(false)
-    , m_trigger(false)
-    , m_update_sets(false)
+    , m_has_ioready(false)
 {
+    clearCommandFlags();
     FD_ZERO(&m_fd_set);
     FD_ZERO(&m_fd_work);
     m_interrupt_pipe[0] = m_interrupt_pipe[1] = -1;
@@ -186,7 +182,7 @@ void FileDescriptorActivity::setTimeout_us(int timeout_us)
     }
 }
 void FileDescriptorActivity::watch(int fd)
-{ RTT::os::MutexLock lock(m_lock);
+{ RTT::os::MutexLock lock(m_fd_lock);
     if (fd < 0)
     {
         log(Error) << "negative file descriptor given to FileDescriptorActivity::watch" << endlog();
@@ -198,25 +194,31 @@ void FileDescriptorActivity::watch(int fd)
     triggerUpdateSets();
 }
 void FileDescriptorActivity::unwatch(int fd)
-{ RTT::os::MutexLock lock(m_lock);
+{ RTT::os::MutexLock lock(m_fd_lock);
     m_watched_fds.erase(fd);
     FD_CLR(fd, &m_fd_set);
     triggerUpdateSets();
 }
 void FileDescriptorActivity::clearAllWatches()
-{ RTT::os::MutexLock lock(m_lock);
+{ RTT::os::MutexLock lock(m_fd_lock);
     m_watched_fds.clear();
     FD_ZERO(&m_fd_set);
     triggerUpdateSets();
 }
 void FileDescriptorActivity::triggerUpdateSets()
 {
-    { RTT::os::MutexLock lock(m_command_mutex);
-        m_update_sets = true;
-    }
+    oro_atomic_inc(&m_update_sets);
     int unused; (void)unused;
     unused = write(m_interrupt_pipe[1], &CMD_ANY_COMMAND, 1);
 }
+
+void FileDescriptorActivity::clearCommandFlags()
+{
+    oro_atomic_set(&m_break_loop, 0);
+    oro_atomic_set(&m_trigger, 0);
+    oro_atomic_set(&m_update_sets, 0);
+}
+
 bool FileDescriptorActivity::isUpdated(int fd) const
 { return FD_ISSET(fd, &m_fd_work); }
 bool FileDescriptorActivity::hasError() const
@@ -224,7 +226,7 @@ bool FileDescriptorActivity::hasError() const
 bool FileDescriptorActivity::hasTimeout() const
 { return m_has_timeout; }
 bool FileDescriptorActivity::isWatched(int fd) const
-{ RTT::os::MutexLock lock(m_lock);
+{ RTT::os::MutexLock lock(m_fd_lock);
     return FD_ISSET(fd, &m_fd_set); }
 
 bool FileDescriptorActivity::start()
@@ -254,10 +256,8 @@ bool FileDescriptorActivity::start()
     }
 #endif
 
-    // reset flags
-    m_break_loop = false;
-    m_trigger = false;
-    m_update_sets = false;
+    // clear command flags
+    clearCommandFlags();
 
     if (!Activity::start())
     {
@@ -273,9 +273,8 @@ bool FileDescriptorActivity::start()
 bool FileDescriptorActivity::trigger()
 { 
     if (isActive() ) {
-        { RTT::os::MutexLock lock(m_command_mutex);
-            m_trigger = true;
-        }
+        if (oro_atomic_read(&m_trigger) > 0) return true;
+        oro_atomic_inc(&m_trigger);
         int unused; (void)unused;
         unused = write(m_interrupt_pipe[1], &CMD_ANY_COMMAND, 1);
         return true;
@@ -287,7 +286,6 @@ bool FileDescriptorActivity::timeout()
 {
     return false;
 }
-
 
 struct fd_watch {
     int& fd;
@@ -305,11 +303,12 @@ void FileDescriptorActivity::loop()
     int pipe = m_interrupt_pipe[0];
     fd_watch watch_pipe_0(m_interrupt_pipe[0]);
     fd_watch watch_pipe_1(m_interrupt_pipe[1]);
+    timeval timeout = { 0, 0 };
 
     while(true)
     {
         int max_fd;
-        { RTT::os::MutexLock lock(m_lock);
+        { RTT::os::MutexLock lock(m_fd_lock);
             if (m_watched_fds.empty())
                 max_fd = pipe;
             else
@@ -319,24 +318,35 @@ void FileDescriptorActivity::loop()
         }
         FD_SET(pipe, &m_fd_work);
 
-        int ret;
-        m_running = false;
+        int ret = -1;
         if (m_timeout_us == 0)
         {
             ret = select(max_fd + 1, &m_fd_work, NULL, NULL, NULL);
         }
         else
         {
-			static const int USECS_PER_SEC = 1000000;
-            timeval timeout = { m_timeout_us / USECS_PER_SEC,
-                                m_timeout_us % USECS_PER_SEC};
+            // only rearm the timer if the previous call was not a pure command pipe event
+            if (m_has_timeout || m_has_ioready || m_has_error ||
+                (timeout.tv_sec == 0 && timeout.tv_usec == 0)) {
+                static const int USECS_PER_SEC = 1000000;
+                timeout.tv_sec = m_timeout_us / USECS_PER_SEC;
+                timeout.tv_usec = m_timeout_us % USECS_PER_SEC;
+            }
             ret = select(max_fd + 1, &m_fd_work, NULL, NULL, &timeout);
         }
 
         m_has_error   = false;
         m_has_timeout = false;
-        if (ret == -1)
+        m_has_ioready = false;
+        if (ret < 0)
         {
+            if (errno == EINTR)
+            {
+                // A signal was caught; see signal(7). We should not handle this
+                // here and simply continue waiting. Could be as trivial as
+                // a SIGWINCH (Window resize signal).
+                continue;
+            }
             log(Error) << "FileDescriptorActivity: error in select(), errno = " << errno << endlog();
             m_has_error = true;
         }
@@ -344,6 +354,11 @@ void FileDescriptorActivity::loop()
         {
 //            log(Error) << "FileDescriptorActivity: timeout in select()" << endlog();
             m_has_timeout = true;
+        }
+        else
+        {
+            // do not trigger an IOReady event if the only file descriptor that was active is the command pipe
+            m_has_ioready = !(ret == 1 && FD_ISSET(pipe, &m_fd_work));
         }
 
         // Empty all commands queued in the pipe
@@ -369,37 +384,33 @@ void FileDescriptorActivity::loop()
         }
 
         // We check the flags after the command queue was emptied as we could miss commands otherwise:
-        bool do_trigger = true;
-        bool user_trigger = false;
-        { RTT::os::MutexLock lock(m_command_mutex);
-            // This section should be really fast to not block threads calling trigger(), breakLoop() or watch().
-            if (m_trigger) {
-                do_trigger = true;
-                user_trigger = true;
-                m_trigger = false;
-            }
-            if (m_update_sets) {
-                m_update_sets = false;
-                do_trigger = false;
-            }
-            if (m_break_loop) {
-                m_break_loop = false;
-                break;
-            }
+        bool do_trigger = false;
+        if (oro_atomic_read(&m_trigger) > 0) {
+            oro_atomic_set(&m_trigger, 0);
+            do_trigger = true;
+        }
+        if (oro_atomic_read(&m_update_sets) > 0) {
+            oro_atomic_set(&m_update_sets, 0);
+        }
+        if (oro_atomic_read(&m_break_loop) > 0) {
+            oro_atomic_set(&m_break_loop, 0);
+            break;
         }
 
-        if (do_trigger)
+        // Execute activity...
+        if (m_has_timeout || m_has_ioready || do_trigger)
         {
             try
             {
                 m_running = true;
                 step();
-                if (m_has_timeout)
-                    work(RunnableInterface::TimeOut);
-                else if ( user_trigger )
+                if ( do_trigger )
                     work(RunnableInterface::Trigger);
-                else
+                if ( m_has_timeout )
+                    work(RunnableInterface::TimeOut);
+                if ( m_has_ioready )
                     work(RunnableInterface::IOReady);
+
                 m_running = false;
             }
             catch(...)
@@ -413,9 +424,8 @@ void FileDescriptorActivity::loop()
 
 bool FileDescriptorActivity::breakLoop()
 {
-    { RTT::os::MutexLock lock(m_command_mutex);
-        m_break_loop = true;
-    }
+    if (oro_atomic_read(&m_break_loop) > 0) return true;
+    oro_atomic_inc(&m_break_loop);
     int unused; (void)unused;
     unused = write(m_interrupt_pipe[1], &CMD_ANY_COMMAND, 1);
     return true;
@@ -423,18 +433,13 @@ bool FileDescriptorActivity::breakLoop()
 
 void FileDescriptorActivity::step()
 {
-    m_running = true;
     if (runner != 0)
         runner->step();
-    m_running = false;
 }
 
 void FileDescriptorActivity::work(base::RunnableInterface::WorkReason reason) {
-    m_running = true;
     if (runner != 0)
         runner->work(reason);
-    m_running = false;
-
 }
 
 bool FileDescriptorActivity::stop()
