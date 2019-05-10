@@ -98,7 +98,7 @@ namespace RTT
         }
 
         virtual void reset() {
-            if (_foo->isLoaded()) mrunner->removeFunction( _foo.get() );
+            mrunner->removeFunction( _foo.get() );
             maccept = false;
             isqueued = false;
         }
