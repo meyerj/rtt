@@ -111,8 +111,8 @@ namespace RTT
         CallFunction( base::ActionInterface* init_com,
                       boost::shared_ptr<ProgramInterface> foo,
                       ExecutionEngine* p, ExecutionEngine* caller,
-                      internal::AssignableDataSource<ProgramInterface*>* v = 0
-                      )
+                      internal::AssignableDataSource<ProgramInterface*>* v = 0 ,
+                      internal::AssignableDataSource<bool>* a = 0 )
         : minit(init_com),
         mrunner(p), mcaller(caller),
         _v( v==0 ? new internal::UnboundDataSource< internal::ValueDataSource<ProgramInterface*> >(foo.get()) : v ),

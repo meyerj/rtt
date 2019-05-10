@@ -865,16 +865,13 @@ namespace RTT
   void ProgramGraphParser::seenstatement()
   {
       // an expression/method call (former do).
-      DataSourceBase::shared_ptr expr = expressionparser.getResult();
-      ConditionInterface* cnd  = expressionparser.getCmdResult();
+      DataSourceBase::shared_ptr expr  = expressionparser.getResult().get();
       expressionparser.dropResult();
       DataSource<bool>* bexpr = dynamic_cast<DataSource<bool>*>(expr.get());
       if (bexpr)
           program_builder->setCommand( new CommandDataSourceBool( bexpr ) );
       else
           program_builder->setCommand( new CommandDataSource( expr ) );
-      if (cnd)
-          program_builder->addConditionEdge( cnd, program_builder->nextNode() );
       if ( program_builder->buildEdges() == 0 )
           program_builder->proceedToNext( new ConditionTrue(), mpositer.get_position().line - ln_offset );
       else

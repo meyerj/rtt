@@ -47,7 +47,6 @@ public:
     ScriptingService::shared_ptr sa;
     int var_i;
     int const_i;
-    SendStatus tss;
 
     void doProgram( const std::string& prog, TaskContext*, bool test=true );
     void finishProgram( TaskContext* , std::string );
@@ -61,14 +60,12 @@ public:
         BOOST_REQUIRE( tc->start() );
         tc->provides()->addService( sa );
         tc->provides()->addAttribute("tvar_i", var_i);
-        tc->provides()->addAttribute("tss", tss);
         tc->provides()->addConstant("tconst_i", const_i);
         // ltc has a test object
 
         const_i = -1;
         var_i = -1;
         i = 0;
-        tss = SendNotReady;
         SimulationThread::Instance()->stop();
     }
 
@@ -512,32 +509,6 @@ BOOST_AUTO_TEST_CASE(testProgramDoFoo)
     this->finishProgram( tc, "x");
 }
 
-BOOST_AUTO_TEST_CASE(testProgramCmdFoo)
-{
-    // see if modifying an attribute works.
-    string prog = string("export function foo(int arg) {\n")
-        + "  do test.assert( tvar_i == arg ) \n"
-        + "  do test.assert( tvar_i != tconst_i ) \n"
-        + "  set tvar_i = tvar_i+2\n"
-        + "  do test.assert( tvar_i == arg + 2 ) \n"
-        + "}\n"
-        + "program x { \n"
-        + "do test.assert( tvar_i == -1 ) \n"
-        + "do test.assert( tvar_i == tconst_i ) \n"
-        + "set tvar_i = +2\n" // 10
-        + "do test.assert( tvar_i == +2 )\n"
-        + "do foo.cmd(tvar_i)\n"
-        + "do test.assert( tvar_i == +4 )\n"
-        + "tss = foo.cmd(tvar_i)\n"
-        + "do test.assert( tvar_i == +6 )\n"
-        + "do test.assert( tss == SendSuccess )\n"
-        + "}";
-    this->doProgram( prog, tc );
-    Attribute<int> i = tc->provides()->getAttribute("tvar_i");
-    BOOST_REQUIRE_EQUAL( 6, i.get() );
-    this->finishProgram( tc, "x");
-}
-
 BOOST_AUTO_TEST_CASE(testSend)
 {
     // see if modifying an attribute works.
@@ -569,25 +540,6 @@ BOOST_AUTO_TEST_CASE(testSend)
     this->doProgram( prog, tc );
     BOOST_REQUIRE_EQUAL( i, 3 );
     BOOST_REQUIRE_EQUAL( var_i, 3 );
-    this->finishProgram( tc, "x");
-}
-
-BOOST_AUTO_TEST_CASE(testCmd)
-{
-    // see if modifying an attribute works.
-    string prog = string("")
-        + "program x { \n"
-        + "test.assertEqual( test.i, 0 )\n"
-        + "var SendStatus ss\n"
-        + "tss = test.increaseCmd.cmd() \n"
-        + "test.assert( tss == SendSuccess )\n"
-        + "test.assertEqual( test.i, 1 )\n"
-        + "ss = test.increaseCmd.cmd()\n"
-        + "test.assert( ss == SendSuccess )\n"
-        + "test.assertEqual( test.i , 2 )\n"
-        + "}";
-    this->doProgram( prog, tc );
-    BOOST_CHECK_EQUAL( i, 2 );
     this->finishProgram( tc, "x");
 }
 
