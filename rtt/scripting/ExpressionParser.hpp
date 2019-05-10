@@ -71,7 +71,7 @@ namespace RTT { namespace scripting
     std::string mobject;
     std::string mmethod;
     ExecutionEngine* mcaller;
-    enum CallType { DEFAULT_CALLTYPE, CALLTYPE_CALL, CALLTYPE_SEND, CALLTYPE_CMD } mcalltype;
+    bool mis_send, mis_cmd;
 
     rule_t datacall, arguments, peerpath, object, method;
 
