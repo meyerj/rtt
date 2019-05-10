@@ -48,7 +48,7 @@ namespace RTT
                       )
         : minit(init_com),
         mrunner(p), mcaller(caller),
-        _foo( foo ), ss(SendFailure), isqueued(false), maccept(false)
+        _foo( foo ), ss(SendNotReady), isqueued(false), maccept(false)
         {
         }
 
@@ -62,7 +62,6 @@ namespace RTT
                 // this is asyn behaviour :
                 if (isqueued == false ) {
                     isqueued = true;
-                    ss = SendNotReady;
                     // is called before runFunction is executed.
                     minit->readArguments();
                     maccept = minit->execute() && mrunner->runFunction( _foo.get() );
@@ -83,7 +82,7 @@ namespace RTT
             } catch (...) {
                 cout << "CmdFunction threw an exception" <<endl;
             }
-            return ss;
+            return ss = SendNotReady;
         }
 
         virtual SendStatus value() const {
@@ -103,7 +102,7 @@ namespace RTT
             if (_foo->isLoaded()) mrunner->removeFunction( _foo.get() );
             maccept = false;
             isqueued = false;
-            ss = SendFailure;
+            ss = SendNotReady;
         }
 
         CmdFunction* clone() const
